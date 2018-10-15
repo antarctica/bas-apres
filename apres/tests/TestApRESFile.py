@@ -91,3 +91,85 @@ class TestApRESFile(unittest.TestCase):
         with ApRESFile(in_file) as f:
             f.read_header()
 
+    def test_read_header_invalid_file(self):
+        in_file = self.base + '/non-existent-file'
+
+        with self.assertRaises(FileNotFoundError):
+            with ApRESFile(in_file) as f:
+                f.read_header()
+
+    def test_read_header_configures_object(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        f = ApRESFile(in_file)
+        f.open(in_file)
+        f.read_header()
+        self.assertEqual(804, f.data_start)
+        self.assertEqual((1, 500), f.data_shape)
+        self.assertEqual('10.0469', f.header['Temp1'])
+        self.assertEqual('10.1094', f.header['Temp2'])
+        self.assertEqual('12.2058', f.header['BatteryVoltage'])
+        f.close()
+
+    def test_read_data_ok(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        with ApRESFile(in_file) as f:
+            f.read_data()
+
+    def test_read_data_invalid_file(self):
+        in_file = self.base + '/non-existent-file'
+
+        with self.assertRaises(FileNotFoundError):
+            with ApRESFile(in_file) as f:
+                f.read_data()
+
+    def test_read_data_reads_header_first_if_not_already_done(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        f = ApRESFile(in_file)
+        f.open(in_file)
+        self.assertEqual(-1, f.data_start)
+        self.assertEqual(0, len(f.header))
+        f.read_data()
+        self.assertNotEqual(-1, f.data_start)
+        self.assertNotEqual(0, len(f.header))
+        f.close()
+
+    def test_read_data_does_not_read_header_if_already_done(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        f = ApRESFile(in_file)
+        f.open(in_file)
+
+        # Setting an arbitrary file offset position for the start of the data
+        # section, will mess up reading the data.  The data cannot be reshaped,
+        # because data_shape is an empty tuple
+        f.data_start = 7
+
+        with self.assertRaises(ValueError):
+            f.read_data()
+
+        self.assertEqual(0, len(f.data_shape))
+        self.assertEqual(0, len(f.header))
+        f.close()
+
+    def test_read_data_shapes_the_data_according_to_header(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        f = ApRESFile(in_file)
+        f.open(in_file)
+        f.read_data()
+        self.assertEqual(f.data_shape, f.data.shape)
+        self.assertEqual(f.data_shape[0] * f.data_shape[1], f.data.size)
+        f.close()
+
+    def test_read_data_reads_expected_values(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        f = ApRESFile(in_file)
+        f.open(in_file)
+        f.read_data()
+        self.assertEqual(33774, f.data[0, 0])
+        f.close()
+

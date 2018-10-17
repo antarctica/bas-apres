@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import Mock, patch, mock_open
+from unittest.mock import Mock, patch
 import os
 
 from apres.apres import ApRESFile
@@ -193,12 +193,11 @@ class TestApRESFile(unittest.TestCase):
         fin = ApRESFile(in_file)
         fin.open(in_file)
 
-        # We mock the call to open() to avoid writing an output file
-        with patch('builtins.open', mock_open()) as mo:
-            with open(out_file, 'w') as fout:
-                mo.assert_called_with(out_file, 'w')
-                fin.write_header(fout)
+        # We mock the call to write() to avoid writing an output file
+        fout = Mock(write=Mock())
 
+        fin.write_header(fout)
+        fout.write.assert_any_call('NSubBursts=1\r\n')
         fin.close()
 
     def test_write_header_reads_header_first_if_not_already_done(self):
@@ -208,31 +207,27 @@ class TestApRESFile(unittest.TestCase):
         fin = ApRESFile(in_file)
         fin.open(in_file)
 
-        with patch('builtins.open', mock_open()) as mo:
-            with open(out_file, 'w') as fout:
-                self.assertEqual(-1, fin.data_start)
-                self.assertEqual(0, len(fin.header))
-                fin.write_header(fout)
-                self.assertNotEqual(-1, fin.data_start)
-                self.assertNotEqual(0, len(fin.header))
- 
+        fout = Mock(write=Mock())
+
+        self.assertEqual(-1, fin.data_start)
+        self.assertEqual(0, len(fin.header))
+        fin.write_header(fout)
+        self.assertNotEqual(-1, fin.data_start)
+        self.assertNotEqual(0, len(fin.header))
         fin.close()
 
     def test_write_header_modified_eol(self):
         in_file = self.base + '/short-test-data.dat'
         out_file = self.base + '/test-out.header'
-        header_lines = ['NSubBursts=100']
 
         fin = ApRESFile(in_file)
+        fin.open(in_file)
 
-        # Seed the header with minimal test data
-        fin.data_start = 1
-        fin.header_lines = header_lines
-        fin.store_header(header_lines)
- 
         fout = Mock(write=Mock())
 
         with patch.dict(fin.DEFAULTS, {'header_line_eol': '\n'}):
             fin.write_header(fout)
-            fout.write.assert_called_with('NSubBursts=100\n')
+            fout.write.assert_any_call('NSubBursts=1\n')
+
+        fin.close()
 

@@ -231,3 +231,32 @@ class TestApRESFile(unittest.TestCase):
 
         fin.close()
 
+    def test_write_header_rewrite_dimensions(self):
+        in_file = self.base + '/short-test-data.dat'
+        out_file = self.base + '/test-out.header'
+
+        fin = ApRESFile(in_file)
+        fin.open(in_file)
+ 
+        fout = Mock(write=Mock())
+
+        fin.write_header(fout, samples=range(10))
+        fout.write.assert_any_call('N_ADC_SAMPLES=10\r\n')
+
+        fin.close()
+
+    def test_write_header_rewrite_dimensions_invalid_kwarg_type(self):
+        in_file = self.base + '/short-test-data.dat'
+        out_file = self.base + '/test-out.header'
+
+        fin = ApRESFile(in_file)
+        fin.open(in_file)
+ 
+        fout = Mock(write=Mock())
+
+        with self.assertRaises(TypeError):
+            # Keyword argument `samples` must be a range object
+            fin.write_header(fout, samples=10)
+
+        fin.close()
+

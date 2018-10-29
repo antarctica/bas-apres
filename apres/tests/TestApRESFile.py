@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import Mock, patch
 import os
+ 
+import numpy as np
 
 from apres.apres import ApRESFile
 
@@ -188,7 +190,6 @@ class TestApRESFile(unittest.TestCase):
 
     def test_write_header_ok(self):
         in_file = self.base + '/short-test-data.dat'
-        out_file = self.base + '/test-out.header'
  
         fin = ApRESFile(in_file)
         fin.open(in_file)
@@ -202,7 +203,6 @@ class TestApRESFile(unittest.TestCase):
 
     def test_write_header_reads_header_first_if_not_already_done(self):
         in_file = self.base + '/short-test-data.dat'
-        out_file = self.base + '/test-out.header'
  
         fin = ApRESFile(in_file)
         fin.open(in_file)
@@ -218,7 +218,6 @@ class TestApRESFile(unittest.TestCase):
 
     def test_write_header_modified_eol(self):
         in_file = self.base + '/short-test-data.dat'
-        out_file = self.base + '/test-out.header'
 
         fin = ApRESFile(in_file)
         fin.open(in_file)
@@ -233,7 +232,6 @@ class TestApRESFile(unittest.TestCase):
 
     def test_write_header_rewrite_dimensions(self):
         in_file = self.base + '/short-test-data.dat'
-        out_file = self.base + '/test-out.header'
 
         fin = ApRESFile(in_file)
         fin.open(in_file)
@@ -247,7 +245,6 @@ class TestApRESFile(unittest.TestCase):
 
     def test_write_header_rewrite_dimensions_invalid_kwarg_type(self):
         in_file = self.base + '/short-test-data.dat'
-        out_file = self.base + '/test-out.header'
 
         fin = ApRESFile(in_file)
         fin.open(in_file)
@@ -257,6 +254,68 @@ class TestApRESFile(unittest.TestCase):
         with self.assertRaises(TypeError):
             # Keyword argument `samples` must be a range object
             fin.write_header(fout, samples=10)
+
+        fin.close()
+
+    def test_write_data_ok(self):
+        in_file = self.base + '/short-test-data.dat'
+ 
+        fin = ApRESFile(in_file)
+        fin.open(in_file)
+
+        fout = Mock(write=Mock())
+
+        fin.write_data(fout)
+        self.assertEqual(fin.data.shape, fin.data_shape)
+        fout.write.assert_called()
+        fin.close()
+
+    def test_write_data_reads_data_first_if_not_already_done(self):
+        in_file = self.base + '/short-test-data.dat'
+ 
+        fin = ApRESFile(in_file)
+        fin.open(in_file)
+
+        fout = Mock(write=Mock())
+
+        self.assertEqual(-1, fin.data_start)
+        self.assertEqual(0, len(fin.header))
+        fin.write_data(fout)
+        self.assertNotEqual(-1, fin.data_start)
+        self.assertNotEqual(0, len(fin.header))
+        fin.close()
+
+    def test_write_data_uses_default_dimensions(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        fin = ApRESFile(in_file)
+        fin.open(in_file)
+ 
+        fout = Mock(write=Mock())
+
+        fin.write_data(fout)
+        records = range(fin.data_shape[0])
+        samples = range(fin.data_shape[1])
+        data_expected = np.asarray(fin.data[records.start:records.stop:records.step, samples.start:samples.stop:samples.step], order=fin.DEFAULTS['data_dim_order'])
+        data_actual = fout.write.call_args[0][0]
+        self.assertTrue(np.array_equal(data_actual, data_expected))
+
+        fin.close()
+
+    def test_write_data_rewrite_dimensions(self):
+        in_file = self.base + '/short-test-data.dat'
+        samples = range(10)
+
+        fin = ApRESFile(in_file)
+        fin.open(in_file)
+ 
+        fout = Mock(write=Mock())
+
+        fin.write_data(fout, samples=samples)
+        records = range(fin.data_shape[0])
+        data_expected = np.asarray(fin.data[records.start:records.stop:records.step, samples.start:samples.stop:samples.step], order=fin.DEFAULTS['data_dim_order'])
+        data_actual = fout.write.call_args[0][0]
+        self.assertTrue(np.array_equal(data_actual, data_expected))
 
         fin.close()
 

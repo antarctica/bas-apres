@@ -22,10 +22,10 @@ if __name__ == '__main__':
     
     suffix = os.path.splitext(filename)[1]
 
-    if suffix == '.dat':
+    if suffix.lower() == '.dat':
         with ApRESFile(filename) as f:
             data = f.read_data()
-    elif suffix == '.nc':
+    elif suffix.lower() == '.nc':
         with Dataset(filename, 'r') as f:
             # We make a copy, otherwise data is invalid after file is closed
             data = f.variables['data'][:]

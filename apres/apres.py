@@ -18,6 +18,7 @@ class ApRESFile(object):
     """
 
     DEFAULTS = {
+        'autodetect_file_format_version': True,
         'file_encoding': 'latin-1',
         'end_of_header_re': '\*\*\* End Header',
         'header_line_delim': '=',
@@ -32,6 +33,12 @@ class ApRESFile(object):
             'long_name': 'Sub Burst ADC Samples'
         }
     }
+
+    ALTERNATIVES = [{
+            'header_line_delim': ':',
+            'data_dim_keys': ['SubBursts in burst', 'Samples']
+        }
+    ]
 
     def __init__(self, path):
         """
@@ -104,53 +111,15 @@ class ApRESFile(object):
 
         return self
 
-    def store_header(self, header_lines):
+    def read_header_lines(self):
         """
-        Store the given header lines as parsed key/value pairs
+        Read the raw header lines from the file
 
-        :param header_lines: Header lines read from the file
-        :type header_lines: list
-        :returns: The parsed header
-        :rtype: dict
-        """
-
-        self.header = {}
-
-        for line in header_lines:
-            item = line.split(self.DEFAULTS['header_line_delim'], maxsplit=1)
-
-            if len(item) > 1 and item[0]:
-                self.header[item[0]] = item[1]
-
-        return self.header
-
-    def define_data_shape(self):
-        """
-        Parse the data dimensions from the header to define the data shape
-
-        The data shape is available in the data_shape tuple
-        """
-
-        self.data_shape = ()
-
-        for key in self.DEFAULTS['data_dim_keys']:
-            self.data_shape = self.data_shape + (int(self.header[key]),)
-
-    def read_header(self):
-        """
-        Read the header from the file
-
-        * The raw header lines are available in the header_lines list
-        * The parsed header is available in the header dict
-        * The file offset to the start of the data is available in data_start
-        * The data shape is available in the data_shape tuple
-
-        :returns: The parsed header
-        :rtype: dict
+        :returns: The raw header lines
+        :rtype: list
         """
 
         self.data_start = -1
-        self.header = {}
         self.header_lines = []
 
         self.fp.seek(self.header_start, 0)
@@ -166,8 +135,84 @@ class ApRESFile(object):
             line = self.fp.readline()
             self.header_lines.append(line.rstrip())
 
-        # The parsed header lines are used to configure this object
-        self.store_header(self.header_lines)
+        return self.header_lines
+
+    def determine_file_format_version(self):
+        """
+        Determine the file format version from the read header lines
+
+        The header lines are inspected to determine the file format version,
+        and the DEFAULTS parsing tokens are setup accordingly
+        """
+
+        # Create a combined list of the first data dimension key from the
+        # default file format, and alternative file formats
+        dim_keys = []
+        dim_keys.append(self.DEFAULTS['data_dim_keys'][0])
+        dim_keys += [item['data_dim_keys'][0] for item in self.ALTERNATIVES]
+
+        # Search the header lines for one of the keys, to determine version
+        for line in self.header_lines:
+            for i, key in enumerate(dim_keys):
+                if re.match(key, line):
+                    if i > 0:          # This is an alternative version
+                        for key in self.ALTERNATIVES[i - 1]:
+                            self.DEFAULTS[key] = self.ALTERNATIVES[i - 1][key]
+                    return
+
+    def store_header(self):
+        """
+        Store the read header lines as parsed key/value pairs
+
+        :returns: The parsed header
+        :rtype: dict
+        """
+
+        self.header = {}
+
+        for line in self.header_lines:
+            item = line.split(self.DEFAULTS['header_line_delim'], maxsplit=1)
+
+            if len(item) > 1 and item[0]:
+                self.header[item[0]] = item[1]
+
+        return self.header
+
+    def define_data_shape(self):
+        """
+        Parse the data dimensions from the header to define the data shape
+
+        :returns: The data shape
+        :rtype: tuple
+        """
+
+        self.data_shape = ()
+
+        for key in self.DEFAULTS['data_dim_keys']:
+            self.data_shape = self.data_shape + (int(self.header[key]),)
+
+        return self.data_shape
+
+    def read_header(self):
+        """
+        Read the header from the file
+
+        * The raw header lines are available in the header_lines list
+        * The parsed header is available in the header dict
+        * The file offset to the start of the data is available in data_start
+        * The data shape is available in the data_shape tuple
+
+        :returns: The parsed header
+        :rtype: dict
+        """
+
+        self.read_header_lines()
+
+        # The header lines are used to configure this object
+        if self.DEFAULTS['autodetect_file_format_version']:
+            self.determine_file_format_version()
+
+        self.store_header()
         self.define_data_shape()
 
         return self.header

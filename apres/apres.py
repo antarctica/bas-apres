@@ -174,7 +174,7 @@ class ApRESFile(object):
             item = line.split(self.DEFAULTS['header_line_delim'], maxsplit=1)
 
             if len(item) > 1 and item[0]:
-                self.header[item[0]] = item[1]
+                self.header[item[0].strip()] = item[1].strip()
 
         return self.header
 

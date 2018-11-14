@@ -75,11 +75,13 @@ class ApRESFile(object):
 
         The file is closed
 
-        :returns: This object
-        :rtype: ApRESFile
+        :returns: False
+        :rtype: bool
         """
 
-        return self.close()
+        self.close()
+
+        return False         # This ensures any exception is re-raised
 
     def open(self, path, mode='r'):
         """

@@ -116,6 +116,14 @@ class ApRESFile(object):
 
         return self
 
+    def reset_init_defaults(self):
+        """
+        Reset the initial DEFAULTS parsing tokens from the ALTERNATIVES list
+        """
+
+        for key in self.ALTERNATIVES[0]:
+            self.DEFAULTS[key] = self.ALTERNATIVES[0][key]
+
     def read_header_lines(self):
         """
         Read the raw header lines from the file

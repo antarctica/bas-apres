@@ -35,6 +35,9 @@ class ApRESFile(object):
     }
 
     ALTERNATIVES = [{
+            'header_line_delim': '=',
+            'data_dim_keys': ['NSubBursts', 'N_ADC_SAMPLES']
+        }, {
             'header_line_delim': ':',
             'data_dim_keys': ['SubBursts in burst', 'Samples']
         }
@@ -147,19 +150,16 @@ class ApRESFile(object):
         and the DEFAULTS parsing tokens are setup accordingly
         """
 
-        # Create a combined list of the first data dimension key from the
-        # default file format, and alternative file formats
-        dim_keys = []
-        dim_keys.append(self.DEFAULTS['data_dim_keys'][0])
-        dim_keys += [item['data_dim_keys'][0] for item in self.ALTERNATIVES]
+        # Create a list of the first data dimension key from the alternative
+        # file formats
+        dim_keys = [item['data_dim_keys'][0] for item in self.ALTERNATIVES]
 
         # Search the header lines for one of the keys, to determine version
         for line in self.header_lines:
             for i, key in enumerate(dim_keys):
                 if re.match(key, line):
-                    if i > 0:          # This is an alternative version
-                        for key in self.ALTERNATIVES[i - 1]:
-                            self.DEFAULTS[key] = self.ALTERNATIVES[i - 1][key]
+                    for key in self.ALTERNATIVES[i]:
+                        self.DEFAULTS[key] = self.ALTERNATIVES[i][key]
                     return
 
     def store_header(self):

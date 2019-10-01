@@ -49,6 +49,35 @@ class TestApRESFile(unittest.TestCase):
         f.store_header()
         self.assertNotIn('Dummy', f.header)
 
+    def test_store_header_strip_whitespace(self):
+        f = ApRESFile('non-existent-file')
+        f.header_lines = ['  Temp1  =  10.0469  ','  Temp2  =  10.1094  ']
+        f.store_header()
+        self.assertEqual('10.0469', f.header['Temp1'])
+        self.assertEqual('10.1094', f.header['Temp2'])
+
+    def test_determine_file_format_version_ok(self):
+        f = ApRESFile('non-existent-file')
+        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001']
+        f.determine_file_format_version()
+        self.assertEqual('=', f.DEFAULTS['header_line_delim'])
+        self.assertEqual(['NSubBursts', 'N_ADC_SAMPLES'], f.DEFAULTS['data_dim_keys'])
+
+        f.header_lines = ['SubBursts in burst: 100', 'Samples: 40001']
+        f.determine_file_format_version()
+        self.assertEqual(':', f.DEFAULTS['header_line_delim'])
+        self.assertEqual(['SubBursts in burst', 'Samples'], f.DEFAULTS['data_dim_keys'])
+
+    def test_determine_file_format_version_turned_off(self):
+        f = ApRESFile('non-existent-file')
+        f.reset_init_defaults()
+
+        # f.DEFAULTS['autodetect_file_format_version'] = False
+        f.header_lines = ['SubBursts in burst: 100', 'Samples: 40001']
+        # f.determine_file_format_version()
+        #self.assertEqual(':', f.DEFAULTS['header_line_delim'])
+        #self.assertEqual(['SubBursts in burst', 'Samples'], f.DEFAULTS['data_dim_keys'])
+
     def test_define_data_shape_ok(self):
         f = ApRESFile('non-existent-file')
         f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001']
@@ -178,6 +207,11 @@ class TestApRESFile(unittest.TestCase):
 
     def test_format_header_line_ok(self):
         f = ApRESFile('non-existent-file')
+
+        # Ensure this is the original default, as it may have been changed by
+        # previous tests
+        f.DEFAULTS['header_line_delim'] = '='
+
         s = f.format_header_line('NSubBursts', '1')
         self.assertEqual('NSubBursts=1', s)
 

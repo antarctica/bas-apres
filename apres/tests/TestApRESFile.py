@@ -353,3 +353,35 @@ class TestApRESFile(unittest.TestCase):
 
         fin.close()
 
+    def test_override_path_in_open(self):
+        non_existent_file = self.base + '/non-existent-file'
+        existent_file = self.base + '/short-test-data.dat'
+
+        f = ApRESFile(non_existent_file)
+
+        with self.assertRaises(FileNotFoundError):
+            f.open()
+            f.read_header()
+            f.close()
+
+        # Override the path given to the constructor with a valid path
+        f.open(existent_file)
+        f.read_header()
+        f.close()
+
+    def test_optional_path_in_open(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        f = ApRESFile(in_file)
+        f.open()
+        f.read_header()
+        f.close()
+
+    def test_optional_path_in_constructor(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        f = ApRESFile()
+        f.open(in_file)
+        f.read_header()
+        f.close()
+

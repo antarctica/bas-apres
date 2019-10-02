@@ -43,7 +43,7 @@ class ApRESFile(object):
         }
     ]
 
-    def __init__(self, path):
+    def __init__(self, path=None):
         """
         Constructor
 
@@ -86,7 +86,7 @@ class ApRESFile(object):
 
         return False         # This ensures any exception is re-raised
 
-    def open(self, path, mode='r'):
+    def open(self, path=None, mode='r'):
         """
         Open the given file
 
@@ -98,8 +98,10 @@ class ApRESFile(object):
         :rtype: ApRESFile
         """
 
-        self.path = path
-        self.fp = open(path, mode, encoding=self.DEFAULTS['file_encoding'])
+        if path:
+            self.path = path
+
+        self.fp = open(self.path, mode, encoding=self.DEFAULTS['file_encoding'])
 
         return self
 

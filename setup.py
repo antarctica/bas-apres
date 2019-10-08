@@ -15,6 +15,12 @@ setup(name='apres',
       author_email='pbree@bas.ac.uk',
       license='Apache 2.0',
       packages=['apres'],
+      scripts=[
+          'apres_to_nc.py',
+          'plot_apres.py',
+          'read_apres.py',
+          'write_apres.py',
+      ],
       install_requires=[
           'numpy',
           'netCDF4'

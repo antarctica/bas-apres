@@ -10,10 +10,10 @@ The `ApRESFile` class is a context manager for ApRES .dat files.  The class cont
 
 #### apres_to_nc.py
 
-This script converts an ApRES .dat file to netCDF4.  The output netCDF filename has the same name as the input .dat file, but with a .nc file suffix.
+This script converts an ApRES .dat file to netCDF4.  The default output netCDF filename has the same name as the input .dat file, but with a .nc file suffix.  Optionally an alternative output netCDF filename can be explicitly given.
 
 ```bash
-python3 apres_to_nc.py filename.dat
+python3 apres_to_nc.py filename.dat [outfile.nc]
 ```
 
 The conversion is a straightforward mapping, in that the header lines become global attributes in the netCDF file, and the data are stored as a `NSubBursts` x `N_ADC_SAMPLES` 2D data array.

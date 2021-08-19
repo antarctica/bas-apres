@@ -23,7 +23,8 @@ class ApRESFile(object):
         'end_of_header_re': '\*\*\* End Header',
         'header_line_delim': '=',
         'header_line_eol': '\r\n',
-        'data_type': '<u2',
+        'data_type_key': 'Average',
+        'data_types': ['<u2','<u2','<u4'],
         'data_dim_keys': ['NSubBursts', 'N_ADC_SAMPLES'],
         'data_dim_order': 'C',
         'netcdf_suffix': '.nc',
@@ -58,6 +59,7 @@ class ApRESFile(object):
         self.header_lines = []
         self.header = {}
         self.data_shape = ()
+        self.data_type = '<u2'
         self.data = None
 
     def __enter__(self):
@@ -194,16 +196,45 @@ class ApRESFile(object):
         """
         Parse the data dimensions from the header to define the data shape
 
+        If the Average header item is non-zero, then that indicates that the
+        subbursts have been aggregated to a single value, so we rewrite that
+        dimension as 1
+
         :returns: The data shape
         :rtype: tuple
         """
 
         self.data_shape = ()
+        data_shape = []
 
         for key in self.DEFAULTS['data_dim_keys']:
-            self.data_shape = self.data_shape + (int(self.header[key]),)
+            data_shape.append(int(self.header[key]))
+
+        if int(self.header[self.DEFAULTS['data_type_key']]) > 0:
+            data_shape[0] = 1
+
+        self.data_shape = tuple(data_shape)
 
         return self.data_shape
+
+    def define_data_type(self):
+        """
+        The Average item from the header is used to define the data type
+
+        Average = 0: Record contains all subbursts as 16-bit ints
+        Average = 1: Record contains the averaged subbursts as a 16-bit int
+        Average = 2: Record contains the stacked subbursts as a 32-bit int
+
+        :returns: The data type
+        :rtype: str
+        """
+
+        try:
+            self.data_type = self.DEFAULTS['data_types'][int(self.header[self.DEFAULTS['data_type_key']])]
+        except IndexError as e:
+            raise IndexError('Unsupported Averaging/Stacking configuration option found in header: {}'.format(int(self.header[self.DEFAULTS['data_type_key']])))
+
+        return self.data_type
 
     def read_header(self):
         """
@@ -213,6 +244,7 @@ class ApRESFile(object):
         * The parsed header is available in the header dict
         * The file offset to the start of the data is available in data_start
         * The data shape is available in the data_shape tuple
+        * The data type is available in data_type
 
         :returns: The parsed header
         :rtype: dict
@@ -226,6 +258,7 @@ class ApRESFile(object):
 
         self.store_header()
         self.define_data_shape()
+        self.define_data_type()
 
         return self.header
 
@@ -244,7 +277,7 @@ class ApRESFile(object):
             self.read_header()
 
         self.fp.seek(self.data_start, 0)
-        self.data = np.fromfile(self.fp, dtype=np.dtype(self.DEFAULTS['data_type']))
+        self.data = np.fromfile(self.fp, dtype=np.dtype(self.data_type))
         self.data = np.reshape(self.data, self.data_shape, order=self.DEFAULTS['data_dim_order'])
 
         return self.data
@@ -371,7 +404,7 @@ class ApRESFile(object):
             ncfile.createDimension(key, self.data_shape[i])
             i += 1
 
-        data = ncfile.createVariable('data', self.DEFAULTS['data_type'], tuple(self.DEFAULTS['data_dim_keys']))
+        data = ncfile.createVariable('data', self.data_type, tuple(self.DEFAULTS['data_dim_keys']))
         data.setncatts(self.DEFAULTS['netcdf_attrs'])
         data[:] = self.data
 

@@ -8,6 +8,7 @@
 import re
 import os
 import sys
+import warnings
 
 import numpy as np
 from netCDF4 import Dataset
@@ -19,6 +20,7 @@ class ApRESFile(object):
 
     DEFAULTS = {
         'autodetect_file_format_version': True,
+        'forgive': True,
         'file_encoding': 'latin-1',
         'end_of_header_re': '\*\*\* End Header',
         'header_line_delim': '=',
@@ -262,6 +264,43 @@ class ApRESFile(object):
 
         return self.header
 
+    def reshape_data(self):
+        """
+        Reshape the data according to the data_shape tuple
+
+        If the data read from the file don't conform to the expected
+        data_shape as determined from the header, then when reshaping the data,
+        an exception will occur:
+
+        * If the reshaping fails because the data array is shorter than
+        expected, then we will reraise the exception.
+        * If forgive mode is True, then we will emit a warning and then
+        truncate the data to conform to the data_shape, otherwise we will
+        reraise the exception.
+
+        :returns: The data
+        :rtype: numpy.array
+        """
+
+        try:
+            self.data = np.reshape(self.data, self.data_shape, order=self.DEFAULTS['data_dim_order'])
+        except ValueError as e:
+            expected_len = self.data_shape[0] * self.data_shape[1]
+
+            if self.data.size < expected_len:
+                warnings.warn("Data array read from file doesn't match data_shape as read from the file header: {}. It is shorter than expected. Cannot continue.")
+                raise
+            elif self.data.size > expected_len:
+                warnings.warn("Data array read from file doesn't match data_shape as read from the file header. It is longer than expected.")
+
+                if self.DEFAULTS['forgive']:
+                    warnings.warn("{}. Will truncate data to fit to data_shape.".format(e))
+                    self.data = np.reshape(self.data[:expected_len], self.data_shape, order=self.DEFAULTS['data_dim_order'])
+                else:
+                    raise
+
+        return self.data
+
     def read_data(self):
         """
         Read the data from the file
@@ -278,7 +317,7 @@ class ApRESFile(object):
 
         self.fp.seek(self.data_start, 0)
         self.data = np.fromfile(self.fp, dtype=np.dtype(self.data_type))
-        self.data = np.reshape(self.data, self.data_shape, order=self.DEFAULTS['data_dim_order'])
+        self.reshape_data()
 
         return self.data
 

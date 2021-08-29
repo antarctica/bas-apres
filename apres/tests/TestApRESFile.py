@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import Mock, patch
 import os
+import warnings
  
 import numpy as np
 
@@ -80,14 +81,14 @@ class TestApRESFile(unittest.TestCase):
 
     def test_define_data_shape_ok(self):
         f = ApRESFile('non-existent-file')
-        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001']
+        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0']
         f.store_header()
         f.define_data_shape()
         self.assertEqual((100,40001), f.data_shape)
 
     def test_define_data_shape_non_integer_value(self):
         f = ApRESFile('non-existent-file')
-        f.header_lines = ['NSubBursts=10.37','N_ADC_SAMPLES=40001']
+        f.header_lines = ['NSubBursts=10.37','N_ADC_SAMPLES=40001','Average=0']
         f.store_header()
 
         with self.assertRaises(ValueError):
@@ -95,7 +96,7 @@ class TestApRESFile(unittest.TestCase):
 
     def test_define_data_shape_no_value(self):
         f = ApRESFile('non-existent-file')
-        f.header_lines = ['NSubBursts=','N_ADC_SAMPLES=40001']
+        f.header_lines = ['NSubBursts=','N_ADC_SAMPLES=40001','Average=0']
         f.store_header()
 
         with self.assertRaises(ValueError):
@@ -103,7 +104,7 @@ class TestApRESFile(unittest.TestCase):
 
     def test_define_data_shape_invalid_delimiter(self):
         f = ApRESFile('non-existent-file')
-        f.header_lines = ['NSubBursts;100','N_ADC_SAMPLES=40001']
+        f.header_lines = ['NSubBursts;100','N_ADC_SAMPLES=40001','Average=0']
         f.store_header()
 
         with self.assertRaises(KeyError):
@@ -111,11 +112,42 @@ class TestApRESFile(unittest.TestCase):
 
     def test_define_data_shape_required_key_missing(self):
         f = ApRESFile('non-existent-file')
-        f.header_lines = ['NSubBursts_is_missing=100','N_ADC_SAMPLES=40001']
+        f.header_lines = ['NSubBursts_is_missing=100','N_ADC_SAMPLES=40001','Average=0']
         f.store_header()
 
         with self.assertRaises(KeyError):
             f.define_data_shape()
+
+    def test_define_data_type_ok(self):
+        f = ApRESFile('non-existent-file')
+        f.header_lines = ['Average=0']
+        f.store_header()
+        f.define_data_type()
+        self.assertEqual(f.DEFAULTS['data_types'][0], f.data_type)
+
+    def test_define_data_type_non_integer_value(self):
+        f = ApRESFile('non-existent-file')
+        f.header_lines = ['Average=0.5']
+        f.store_header()
+
+        with self.assertRaises(ValueError):
+            f.define_data_type()
+
+    def test_define_data_type_unsupported_value(self):
+        f = ApRESFile('non-existent-file')
+        f.header_lines = ['Average=3']
+        f.store_header()
+
+        with self.assertRaises(IndexError):
+            f.define_data_type()
+
+    def test_define_data_type_required_key_missing(self):
+        f = ApRESFile('non-existent-file')
+        f.header_lines = ['Average_is_missing=0']
+        f.store_header()
+
+        with self.assertRaises(KeyError):
+            f.define_data_type()
 
     def test_read_header_ok(self):
         in_file = self.base + '/short-test-data.dat'
@@ -176,10 +208,13 @@ class TestApRESFile(unittest.TestCase):
 
         # Setting an arbitrary file offset position for the start of the data
         # section, will mess up reading the data.  The data cannot be reshaped,
-        # because data_shape is an empty tuple
+        # because data_shape is an empty tuple.  We catch the ValueError thrown
+        # when reshaping, because we check to see if the data are shorter or
+        # longer than expected.  As the data_shape tuple is empty though, we
+        # will cause an IndexError
         f.data_start = 7
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(IndexError):
             f.read_data()
 
         self.assertEqual(0, len(f.data_shape))
@@ -194,6 +229,82 @@ class TestApRESFile(unittest.TestCase):
         f.read_data()
         self.assertEqual(f.data_shape, f.data.shape)
         self.assertEqual(f.data_shape[0] * f.data_shape[1], f.data.size)
+        f.close()
+
+    def test_read_data_fails_to_shape_shorter_data(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        f = ApRESFile(in_file)
+        f.open(in_file)
+        f.read_data()
+
+        # Change the header so we're expecting twice as much data as we
+        # actually read.  We catch the initial ValueError, so that we can
+        # provide a meaningful warning, then reraise the error
+        f.header['NSubBursts'] = 2
+        f.define_data_shape()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+
+            with self.assertRaises(ValueError):
+                f.reshape_data()
+
+        f.close()
+
+    def test_read_data_forgives_to_shape_longer_data(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        f = ApRESFile(in_file)
+        f.open(in_file)
+        f.read_data()
+
+        # When calling read_data(), the data are shaped according to the
+        # header.  To redefine the shape and truncate, we need to effectively
+        # read the data as a 1D linear array, as they are when first read
+        f.data_shape = (f.data.size)
+        f.reshape_data()
+
+        # Change the header so we're expecting half as much data as we
+        # actually read.  We catch the initial ValueError, so that we can
+        # provide a meaningful warning.  If in forgive mode, we truncate the
+        # data and continue without error
+        f.header['N_ADC_SAMPLES'] = 250
+        f.define_data_shape()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            f.reshape_data()
+            self.assertEqual(f.data_shape, f.data.shape)
+            self.assertEqual(f.data_shape[0] * f.data_shape[1], f.data.size)
+
+        f.close()
+
+    def test_read_data_fails_to_shape_longer_data(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        f = ApRESFile(in_file)
+        f.open(in_file)
+        f.read_data()
+
+        # Reset data shape as 1D
+        f.data_shape = (f.data.size)
+        f.reshape_data()
+
+        # Change the header so we're expecting half as much data as we
+        # actually read.  We catch the initial ValueError, so that we can
+        # provide a meaningful warning.  If not in forgive mode, we reraise
+        # the error
+        f.header['N_ADC_SAMPLES'] = 250
+        f.define_data_shape()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+
+            with self.assertRaises(ValueError):
+                with patch.dict(f.DEFAULTS, {'forgive': False}):
+                    f.reshape_data()
+
         f.close()
 
     def test_read_data_reads_expected_values(self):

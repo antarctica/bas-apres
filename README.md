@@ -20,10 +20,52 @@ The conversion is a straightforward mapping, in that the header lines become glo
 
 #### plot_apres.py
 
-This script will plot the samples of the first `nrows` x `ncols` sub bursts from the given file, in an `nrows` by `ncols` grid of plots.  By default `nrows` = `ncols` = 1, hence only the first sub burst is plotted.  The file can be either an ApRES .dat file, or a converted netCDF file.
+This script will plot the `N_ADC_SAMPLES` vs `NSubBursts` as a radargram.  If the `Average` header item > 0 (and so each sub burst has been aggregated), then the script will instead plot the first sub burst as a single trace.  The file can be either an ApRES .dat file, or a converted netCDF file.
 
 ```bash
-python3 plot_apres.py filename.{dat,nc} [nrows ncols]
+python3 plot_apres.py [-h] [-r | -t] [-g GRID GRID] [-c CONTRAST] [-m CMAP]
+                      filename.{dat,nc}
+
+plot ApRES data, either from a .dat file, or a converted netCDF file
+
+positional arguments:
+  filename              filename
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -r, --radargram       plot a radargram
+  -t, --traces          plot individual traces
+  -g GRID GRID, --grid GRID GRID
+                        plot the first nrows x ncols traces
+  -c CONTRAST, --contrast CONTRAST
+                        contrast for the radargram
+  -m CMAP, --cmap CMAP  colour map for the radargram
+
+Examples
+
+Plot the given ApRES .dat file as a radargram:
+
+python3 plot_apres.py filename.dat
+
+Plot the given converted netCDF file as a radargram:
+
+python3 plot_apres.py filename.nc
+
+Plot the given ApRES file as a radargram, increasing the contrast:
+
+python3 plot_apres.py -c 10 filename.dat
+
+Same as above, but with a blue-white-red colour map:
+
+python3 plot_apres.py -c 10 -m bwr filename.dat
+
+Plot the first trace from the given ApRES file:
+
+python3 plot_apres.py -t filename.dat
+
+Plot the first 6 traces, in a 3x2 grid:
+
+python3 plot_apres.py -t -g 3 2 filename.dat
 ```
 
 #### read_apres.py

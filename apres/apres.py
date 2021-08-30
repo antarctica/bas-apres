@@ -22,6 +22,10 @@ class ApRESFile(object):
         'autodetect_file_format_version': True,
         'forgive': True,
         'file_encoding': 'latin-1',
+        'header_markers': {
+            'start': '\r\n*** Burst Header ***',
+            'end': '\r\n*** End Header ***'
+        },
         'end_of_header_re': '\*\*\* End Header',
         'header_line_delim': '=',
         'header_line_eol': '\r\n',
@@ -238,6 +242,23 @@ class ApRESFile(object):
 
         return self.data_type
 
+    def configure_from_header(self):
+        """
+        Configure the object from the raw header lines
+
+        :returns: The parsed header
+        :rtype: dict
+        """
+
+        if self.DEFAULTS['autodetect_file_format_version']:
+            self.determine_file_format_version()
+
+        self.store_header()
+        self.define_data_shape()
+        self.define_data_type()
+
+        return self.header
+
     def read_header(self):
         """
         Read the header from the file
@@ -252,15 +273,9 @@ class ApRESFile(object):
         :rtype: dict
         """
 
-        self.read_header_lines()
-
         # The header lines are used to configure this object
-        if self.DEFAULTS['autodetect_file_format_version']:
-            self.determine_file_format_version()
-
-        self.store_header()
-        self.define_data_shape()
-        self.define_data_type()
+        self.read_header_lines()
+        self.configure_from_header()
 
         return self.header
 
@@ -334,6 +349,20 @@ class ApRESFile(object):
         """
 
         return '{}{}{}'.format(key, self.DEFAULTS['header_line_delim'], value)
+
+    def reconstruct_header_lines(self):
+        """
+        Reconstruct the raw header lines from the parsed header
+
+        :returns: The reconstructed raw header lines
+        :rtype: list
+        """
+
+        self.header_lines = [self.format_header_line(k,v) for k,v in self.header.items()]
+        self.header_lines.insert(0, self.DEFAULTS['header_markers']['start'])
+        self.header_lines.append(self.DEFAULTS['header_markers']['end'])
+
+        return self.header_lines
 
     def write_header(self, fp, records=None, samples=None):
         """

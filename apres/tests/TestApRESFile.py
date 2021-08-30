@@ -496,3 +496,29 @@ class TestApRESFile(unittest.TestCase):
         f.read_header()
         f.close()
 
+    def compare_reconstructed_header_lines(self, header, expected_header_lines):
+        in_file = self.base + '/non-existent-file'
+
+        f = ApRESFile(in_file)
+
+        # We initially set the header_lines to be the parsed header which
+        # allows us to determine the file format version, and thus setup the
+        # DEFAULTS parsing tokens accordingly.  This then allows us to correctly
+        # reconstruct the raw header lines with the appropriate header line
+        # delimiter for the file format version
+        f.header = header
+        f.header_lines = f.header
+        f.determine_file_format_version()
+        f.reconstruct_header_lines()
+        self.assertEqual(expected_header_lines, f.header_lines)
+
+    def test_reconstruct_header_lines_v2(self):
+        expected_header_lines = ['\r\n*** Burst Header ***', 'Time stamp=2019-12-25 03:26:37', 'NSubBursts=100', 'Average=0', 'N_ADC_SAMPLES=40001', '\r\n*** End Header ***']
+        header = {'Time stamp': '2019-12-25 03:26:37', 'NSubBursts': '100', 'Average': '0', 'N_ADC_SAMPLES': '40001'}
+        self.compare_reconstructed_header_lines(header, expected_header_lines)
+
+    def test_reconstruct_header_lines_v1(self):
+        expected_header_lines = ['\r\n*** Burst Header ***', 'Samples:60000', 'SubBursts in burst:100', 'Time stamp:2013-12-27 10:32:31', 'Average:2', '\r\n*** End Header ***']
+        header = {'Samples': '60000', 'SubBursts in burst': '100', 'Time stamp': '2013-12-27 10:32:31', 'Average': '2'}
+        self.compare_reconstructed_header_lines(header, expected_header_lines)
+

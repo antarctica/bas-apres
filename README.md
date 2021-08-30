@@ -46,3 +46,13 @@ The script's primary purpose is as a simple example of how to use the `ApRESFile
 python3 write_apres.py infile.dat outfile.dat [records [samples]]
 ```
 
+#### nc_to_apres.py
+
+This script converts a previously converted netCDF4 file back to the original ApRES .dat file.  The default output ApRES .dat filename has the same name as the input netCDF file, but with a .dat file suffix.  Optionally an alternative output ApRES filename can be explicitly given.
+
+```bash
+python3 nc_to_apres.py infile.nc [outfile.dat]
+```
+
+The conversion is a straightforward reversal of the original conversion.  For the newer ApRES .dat file format version, this should be identical to the original file.  For the older ApRES .dat file format version, there will likely be small differences in the whitespace in the textual file header.  Ignoring these insignificant changes in whitespace (e.g. `diff -awB orig.dat reconstructed.dat`), the files will be identical.
+

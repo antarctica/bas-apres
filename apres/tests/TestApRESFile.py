@@ -5,7 +5,7 @@ import warnings
  
 import numpy as np
 
-from apres.apres import ApRESFile
+from apres import ApRESFile
 
 class TestApRESFile(unittest.TestCase):
 

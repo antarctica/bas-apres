@@ -3,7 +3,7 @@ import os
 
 from netCDF4 import Dataset
 
-from apres.apres import ApRESFile
+from apres import ApRESFile
 
 APRES_SUFFIX = '.dat'
 

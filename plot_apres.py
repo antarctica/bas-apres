@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from netCDF4 import Dataset
 
-from apres.apres import ApRESFile
+from apres import ApRESFile
 
 def construct_radargram(plt, mat, xaxis, yaxis, xlim=None, ylim=None, xlabel='NSubBursts', ylabel='N_ADC_SAMPLES', contrast=1.0, cmap='gray', aspect='auto'):
     """

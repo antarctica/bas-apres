@@ -1,7 +1,7 @@
 import sys
 import os
 
-from apres.apres import ApRESFile
+from apres import ApRESFile
 
 if __name__ == '__main__':
     try:

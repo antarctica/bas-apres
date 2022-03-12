@@ -17,6 +17,7 @@ setup(name='apres',
       packages=['apres'],
       scripts=[
           'apres_to_nc.py',
+          'nc_to_apres.py',
           'plot_apres.py',
           'read_apres.py',
           'write_apres.py',

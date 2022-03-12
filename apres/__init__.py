@@ -330,8 +330,9 @@ class ApRESFile(object):
         if self.data_start == -1:
             self.read_header()
 
+        count = self.data_shape[0] * self.data_shape[1]
         self.fp.seek(self.data_start, 0)
-        self.data = np.fromfile(self.fp, dtype=np.dtype(self.data_type))
+        self.data = np.fromfile(self.fp, dtype=np.dtype(self.data_type), count=count)
         self.reshape_data()
 
         return self.data

@@ -5,14 +5,17 @@ import warnings
  
 import numpy as np
 
-from apres import ApRESFile
+from apres import ApRESBurst, ApRESFile
 
-class TestApRESFile(unittest.TestCase):
+class TestApRESBurst(unittest.TestCase):
 
     base = os.path.dirname(__file__)
 
+    def test_optional_fp_in_constructor(self):
+        f = ApRESBurst()
+
     def test_store_header_ok(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['Temp1=10.0469','Temp2=10.1094','BatteryVoltage=12.2058']
         f.store_header()
         self.assertEqual('10.0469', f.header['Temp1'])
@@ -20,45 +23,45 @@ class TestApRESFile(unittest.TestCase):
         self.assertEqual('12.2058', f.header['BatteryVoltage'])
 
     def test_store_header_value_has_delimiter(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['Dummy=value=10']
         f.store_header()
         self.assertEqual('value=10', f.header['Dummy'])
 
     def test_store_header_no_value(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['Dummy=']
         f.store_header()
         self.assertEqual('', f.header['Dummy'])
 
     def test_store_header_no_key(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['=12']
         f.store_header()
         self.assertNotIn('', f.header)
 
     def test_store_header_false_like_key(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['0=12','False=0']
         f.store_header()
         self.assertEqual('12', f.header['0'])
         self.assertEqual('0', f.header['False'])
 
     def test_store_header_invalid_delimiter(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['Dummy;10']
         f.store_header()
         self.assertNotIn('Dummy', f.header)
 
     def test_store_header_strip_whitespace(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['  Temp1  =  10.0469  ','  Temp2  =  10.1094  ']
         f.store_header()
         self.assertEqual('10.0469', f.header['Temp1'])
         self.assertEqual('10.1094', f.header['Temp2'])
 
     def test_determine_file_format_version_ok(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001']
         f.determine_file_format_version()
         self.assertEqual('=', f.DEFAULTS['header_line_delim'])
@@ -70,7 +73,7 @@ class TestApRESFile(unittest.TestCase):
         self.assertEqual(['SubBursts in burst', 'Samples'], f.DEFAULTS['data_dim_keys'])
 
     def test_determine_file_format_version_turned_off(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.reset_init_defaults()
 
         # f.DEFAULTS['autodetect_file_format_version'] = False
@@ -80,14 +83,14 @@ class TestApRESFile(unittest.TestCase):
         #self.assertEqual(['SubBursts in burst', 'Samples'], f.DEFAULTS['data_dim_keys'])
 
     def test_define_data_shape_ok(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0']
         f.store_header()
         f.define_data_shape()
         self.assertEqual((100,40001), f.data_shape)
 
     def test_define_data_shape_non_integer_value(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['NSubBursts=10.37','N_ADC_SAMPLES=40001','Average=0']
         f.store_header()
 
@@ -95,7 +98,7 @@ class TestApRESFile(unittest.TestCase):
             f.define_data_shape()
 
     def test_define_data_shape_no_value(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['NSubBursts=','N_ADC_SAMPLES=40001','Average=0']
         f.store_header()
 
@@ -103,7 +106,7 @@ class TestApRESFile(unittest.TestCase):
             f.define_data_shape()
 
     def test_define_data_shape_invalid_delimiter(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['NSubBursts;100','N_ADC_SAMPLES=40001','Average=0']
         f.store_header()
 
@@ -111,7 +114,7 @@ class TestApRESFile(unittest.TestCase):
             f.define_data_shape()
 
     def test_define_data_shape_required_key_missing(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['NSubBursts_is_missing=100','N_ADC_SAMPLES=40001','Average=0']
         f.store_header()
 
@@ -119,14 +122,14 @@ class TestApRESFile(unittest.TestCase):
             f.define_data_shape()
 
     def test_define_data_type_ok(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['Average=0']
         f.store_header()
         f.define_data_type()
         self.assertEqual(f.DEFAULTS['data_types'][0], f.data_type)
 
     def test_define_data_type_non_integer_value(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['Average=0.5']
         f.store_header()
 
@@ -134,7 +137,7 @@ class TestApRESFile(unittest.TestCase):
             f.define_data_type()
 
     def test_define_data_type_unsupported_value(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['Average=3']
         f.store_header()
 
@@ -142,7 +145,7 @@ class TestApRESFile(unittest.TestCase):
             f.define_data_type()
 
     def test_define_data_type_required_key_missing(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
         f.header_lines = ['Average_is_missing=0']
         f.store_header()
 
@@ -152,59 +155,63 @@ class TestApRESFile(unittest.TestCase):
     def test_read_header_ok(self):
         in_file = self.base + '/short-test-data.dat'
 
-        with ApRESFile(in_file) as f:
+        with open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding']) as fp:
+            f = ApRESBurst(fp)
             f.read_header()
 
     def test_read_header_invalid_file(self):
         in_file = self.base + '/non-existent-file'
 
         with self.assertRaises(FileNotFoundError):
-            with ApRESFile(in_file) as f:
+            with open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding']) as fp:
+                f = ApRESBurst(fp)
                 f.read_header()
 
     def test_read_header_configures_object(self):
         in_file = self.base + '/short-test-data.dat'
 
-        f = ApRESFile(in_file)
-        f.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        f = ApRESBurst(fp)
         f.read_header()
         self.assertEqual(804, f.data_start)
         self.assertEqual((1, 500), f.data_shape)
         self.assertEqual('10.0469', f.header['Temp1'])
         self.assertEqual('10.1094', f.header['Temp2'])
         self.assertEqual('12.2058', f.header['BatteryVoltage'])
-        f.close()
+        fp.close()
 
     def test_read_data_ok(self):
         in_file = self.base + '/short-test-data.dat'
 
-        with ApRESFile(in_file) as f:
+        with open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding']) as fp:
+            f = ApRESBurst(fp)
             f.read_data()
 
     def test_read_data_invalid_file(self):
         in_file = self.base + '/non-existent-file'
 
         with self.assertRaises(FileNotFoundError):
-            with ApRESFile(in_file) as f:
+            with open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding']) as fp:
+                f = ApRESBurst(fp)
                 f.read_data()
 
     def test_read_data_reads_header_first_if_not_already_done(self):
         in_file = self.base + '/short-test-data.dat'
 
-        f = ApRESFile(in_file)
-        f.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        f = ApRESBurst(fp)
         self.assertEqual(-1, f.data_start)
         self.assertEqual(0, len(f.header))
         f.read_data()
         self.assertNotEqual(-1, f.data_start)
         self.assertNotEqual(0, len(f.header))
-        f.close()
+        fp.close()
 
     def test_read_data_does_not_read_header_if_already_done(self):
         in_file = self.base + '/short-test-data.dat'
 
-        f = ApRESFile(in_file)
-        f.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        f = ApRESBurst(fp)
 
         # Setting an arbitrary file offset position for the start of the data
         # section, will mess up reading the data.  The data cannot be reshaped,
@@ -219,23 +226,23 @@ class TestApRESFile(unittest.TestCase):
 
         self.assertEqual(0, len(f.data_shape))
         self.assertEqual(0, len(f.header))
-        f.close()
+        fp.close()
 
     def test_read_data_shapes_the_data_according_to_header(self):
         in_file = self.base + '/short-test-data.dat'
 
-        f = ApRESFile(in_file)
-        f.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        f = ApRESBurst(fp)
         f.read_data()
         self.assertEqual(f.data_shape, f.data.shape)
         self.assertEqual(f.data_shape[0] * f.data_shape[1], f.data.size)
-        f.close()
+        fp.close()
 
     def test_read_data_fails_to_shape_shorter_data(self):
         in_file = self.base + '/short-test-data.dat'
 
-        f = ApRESFile(in_file)
-        f.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        f = ApRESBurst(fp)
         f.read_data()
 
         # Change the header so we're expecting twice as much data as we
@@ -250,13 +257,13 @@ class TestApRESFile(unittest.TestCase):
             with self.assertRaises(ValueError):
                 f.reshape_data()
 
-        f.close()
+        fp.close()
 
     def test_read_data_forgives_to_shape_longer_data(self):
         in_file = self.base + '/short-test-data.dat'
 
-        f = ApRESFile(in_file)
-        f.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        f = ApRESBurst(fp)
         f.read_data()
 
         # When calling read_data(), the data are shaped according to the
@@ -278,13 +285,13 @@ class TestApRESFile(unittest.TestCase):
             self.assertEqual(f.data_shape, f.data.shape)
             self.assertEqual(f.data_shape[0] * f.data_shape[1], f.data.size)
 
-        f.close()
+        fp.close()
 
     def test_read_data_fails_to_shape_longer_data(self):
         in_file = self.base + '/short-test-data.dat'
 
-        f = ApRESFile(in_file)
-        f.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        f = ApRESBurst(fp)
         f.read_data()
 
         # Reset data shape as 1D
@@ -305,19 +312,19 @@ class TestApRESFile(unittest.TestCase):
                 with patch.dict(f.DEFAULTS, {'forgive': False}):
                     f.reshape_data()
 
-        f.close()
+        fp.close()
 
     def test_read_data_reads_expected_values(self):
         in_file = self.base + '/short-test-data.dat'
 
-        f = ApRESFile(in_file)
-        f.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        f = ApRESBurst(fp)
         f.read_data()
         self.assertEqual(33774, f.data[0, 0])
-        f.close()
+        fp.close()
 
     def test_format_header_line_ok(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
 
         # Ensure this is the original default, as it may have been changed by
         # previous tests
@@ -327,7 +334,7 @@ class TestApRESFile(unittest.TestCase):
         self.assertEqual('NSubBursts=1', s)
 
     def test_format_header_line_modified_delimiter(self):
-        f = ApRESFile('non-existent-file')
+        f = ApRESBurst()
 
         with patch.dict(f.DEFAULTS, {'header_line_delim': ':'}):
             s = f.format_header_line('NSubBursts', '1')
@@ -336,21 +343,21 @@ class TestApRESFile(unittest.TestCase):
     def test_write_header_ok(self):
         in_file = self.base + '/short-test-data.dat'
  
-        fin = ApRESFile(in_file)
-        fin.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        fin = ApRESBurst(fp)
 
         # We mock the call to write() to avoid writing an output file
         fout = Mock(write=Mock())
 
         fin.write_header(fout)
         fout.write.assert_any_call('NSubBursts=1\r\n')
-        fin.close()
+        fp.close()
 
     def test_write_header_reads_header_first_if_not_already_done(self):
         in_file = self.base + '/short-test-data.dat'
  
-        fin = ApRESFile(in_file)
-        fin.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        fin = ApRESBurst(fp)
 
         fout = Mock(write=Mock())
 
@@ -359,13 +366,13 @@ class TestApRESFile(unittest.TestCase):
         fin.write_header(fout)
         self.assertNotEqual(-1, fin.data_start)
         self.assertNotEqual(0, len(fin.header))
-        fin.close()
+        fp.close()
 
     def test_write_header_modified_eol(self):
         in_file = self.base + '/short-test-data.dat'
 
-        fin = ApRESFile(in_file)
-        fin.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        fin = ApRESBurst(fp)
 
         fout = Mock(write=Mock())
 
@@ -373,26 +380,26 @@ class TestApRESFile(unittest.TestCase):
             fin.write_header(fout)
             fout.write.assert_any_call('NSubBursts=1\n')
 
-        fin.close()
+        fp.close()
 
     def test_write_header_rewrite_dimensions(self):
         in_file = self.base + '/short-test-data.dat'
 
-        fin = ApRESFile(in_file)
-        fin.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        fin = ApRESBurst(fp)
  
         fout = Mock(write=Mock())
 
         fin.write_header(fout, samples=range(10))
         fout.write.assert_any_call('N_ADC_SAMPLES=10\r\n')
 
-        fin.close()
+        fp.close()
 
     def test_write_header_rewrite_dimensions_invalid_kwarg_type(self):
         in_file = self.base + '/short-test-data.dat'
 
-        fin = ApRESFile(in_file)
-        fin.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        fin = ApRESBurst(fp)
  
         fout = Mock(write=Mock())
 
@@ -400,26 +407,26 @@ class TestApRESFile(unittest.TestCase):
             # Keyword argument `samples` must be a range object
             fin.write_header(fout, samples=10)
 
-        fin.close()
+        fp.close()
 
     def test_write_data_ok(self):
         in_file = self.base + '/short-test-data.dat'
  
-        fin = ApRESFile(in_file)
-        fin.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        fin = ApRESBurst(fp)
 
         fout = Mock(write=Mock())
 
         fin.write_data(fout)
         self.assertEqual(fin.data.shape, fin.data_shape)
         fout.write.assert_called()
-        fin.close()
+        fp.close()
 
     def test_write_data_reads_data_first_if_not_already_done(self):
         in_file = self.base + '/short-test-data.dat'
  
-        fin = ApRESFile(in_file)
-        fin.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        fin = ApRESBurst(fp)
 
         fout = Mock(write=Mock())
 
@@ -428,13 +435,13 @@ class TestApRESFile(unittest.TestCase):
         fin.write_data(fout)
         self.assertNotEqual(-1, fin.data_start)
         self.assertNotEqual(0, len(fin.header))
-        fin.close()
+        fp.close()
 
     def test_write_data_uses_default_dimensions(self):
         in_file = self.base + '/short-test-data.dat'
 
-        fin = ApRESFile(in_file)
-        fin.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        fin = ApRESBurst(fp)
  
         fout = Mock(write=Mock())
 
@@ -445,14 +452,14 @@ class TestApRESFile(unittest.TestCase):
         data_actual = fout.write.call_args[0][0]
         self.assertTrue(np.array_equal(data_actual, data_expected))
 
-        fin.close()
+        fp.close()
 
     def test_write_data_rewrite_dimensions(self):
         in_file = self.base + '/short-test-data.dat'
         samples = range(10)
 
-        fin = ApRESFile(in_file)
-        fin.open(in_file)
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        fin = ApRESBurst(fp)
  
         fout = Mock(write=Mock())
 
@@ -462,44 +469,10 @@ class TestApRESFile(unittest.TestCase):
         data_actual = fout.write.call_args[0][0]
         self.assertTrue(np.array_equal(data_actual, data_expected))
 
-        fin.close()
-
-    def test_override_path_in_open(self):
-        non_existent_file = self.base + '/non-existent-file'
-        existent_file = self.base + '/short-test-data.dat'
-
-        f = ApRESFile(non_existent_file)
-
-        with self.assertRaises(FileNotFoundError):
-            f.open()
-            f.read_header()
-            f.close()
-
-        # Override the path given to the constructor with a valid path
-        f.open(existent_file)
-        f.read_header()
-        f.close()
-
-    def test_optional_path_in_open(self):
-        in_file = self.base + '/short-test-data.dat'
-
-        f = ApRESFile(in_file)
-        f.open()
-        f.read_header()
-        f.close()
-
-    def test_optional_path_in_constructor(self):
-        in_file = self.base + '/short-test-data.dat'
-
-        f = ApRESFile()
-        f.open(in_file)
-        f.read_header()
-        f.close()
+        fp.close()
 
     def compare_reconstructed_header_lines(self, header, expected_header_lines):
-        in_file = self.base + '/non-existent-file'
-
-        f = ApRESFile(in_file)
+        f = ApRESBurst()
 
         # We initially set the header_lines to be the parsed header which
         # allows us to determine the file format version, and thus setup the
@@ -521,4 +494,40 @@ class TestApRESFile(unittest.TestCase):
         expected_header_lines = ['\r\n*** Burst Header ***', 'Samples:60000', 'SubBursts in burst:100', 'Time stamp:2013-12-27 10:32:31', 'Average:2', '\r\n*** End Header ***']
         header = {'Samples': '60000', 'SubBursts in burst': '100', 'Time stamp': '2013-12-27 10:32:31', 'Average': '2'}
         self.compare_reconstructed_header_lines(header, expected_header_lines)
+
+class TestApRESFile(unittest.TestCase):
+
+    base = os.path.dirname(__file__)
+
+    def test_override_path_in_open(self):
+        non_existent_file = self.base + '/non-existent-file'
+        existent_file = self.base + '/short-test-data.dat'
+
+        f = ApRESFile(non_existent_file)
+
+        with self.assertRaises(FileNotFoundError):
+            f.open()
+            f.read()
+            f.close()
+
+        # Override the path given to the constructor with a valid path
+        f.open(existent_file)
+        f.read()
+        f.close()
+
+    def test_optional_path_in_open(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        f = ApRESFile(in_file)
+        f.open()
+        f.read()
+        f.close()
+
+    def test_optional_path_in_constructor(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        f = ApRESFile()
+        f.open(in_file)
+        f.read()
+        f.close()
 

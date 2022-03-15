@@ -1,6 +1,6 @@
 ###############################################################################
 # Project: ApRES
-# Purpose: Class to encapsulate an ApRES file
+# Purpose: Classes to encapsulate an ApRES file
 # Author:  Paul M. Breen
 # Date:    2018-09-24
 ###############################################################################
@@ -13,15 +13,14 @@ import warnings
 import numpy as np
 from netCDF4 import Dataset
 
-class ApRESFile(object):
+class ApRESBurst(object):
     """
-    Context manager for reading and writing ApRES files
+    Class for reading and writing ApRES bursts
     """
 
     DEFAULTS = {
         'autodetect_file_format_version': True,
         'forgive': True,
-        'file_encoding': 'latin-1',
         'header_markers': {
             'start': '\r\n*** Burst Header ***',
             'end': '\r\n*** End Header ***'
@@ -32,13 +31,7 @@ class ApRESFile(object):
         'data_type_key': 'Average',
         'data_types': ['<u2','<u2','<u4'],
         'data_dim_keys': ['NSubBursts', 'N_ADC_SAMPLES'],
-        'data_dim_order': 'C',
-        'netcdf_suffix': '.nc',
-        'netcdf_add_history': True,
-        'netcdf_attrs': {
-            'units': '1',
-            'long_name': 'Sub Burst ADC Samples'
-        }
+        'data_dim_order': 'C'
     }
 
     ALTERNATIVES = [{
@@ -50,16 +43,20 @@ class ApRESFile(object):
         }
     ]
 
-    def __init__(self, path=None):
+    def __init__(self, fp=None):
         """
         Constructor
 
-        :param path: Path to the file
-        :type path: str
+        * fp is not None: Then header_start will be set to the file's current
+        position.  This allows reading through a file one burst block at a
+        time.  This is the normal behaviour.
+        * fp is None: Allows the burst object to be populated by other means,
+        rather than reading from a file
+
+        :param fp: The open file object of the input file
+        :type fp: file object
         """
 
-        self.path = path
-        self.fp = None
         self.header_start = 0
         self.data_start = -1
         self.header_lines = []
@@ -68,63 +65,10 @@ class ApRESFile(object):
         self.data_type = '<u2'
         self.data = None
 
-    def __enter__(self):
-        """
-        Enter the runtime context for this object
+        self.fp = fp
 
-        The file is opened
-
-        :returns: This object
-        :rtype: ApRESFile
-        """
-
-        return self.open(self.path)
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        """
-        Exit the runtime context for this object
-
-        The file is closed
-
-        :returns: False
-        :rtype: bool
-        """
-
-        self.close()
-
-        return False         # This ensures any exception is re-raised
-
-    def open(self, path=None, mode='r'):
-        """
-        Open the given file
-
-        :param path: Path to the file
-        :type path: str
-        :param mode: Mode in which to open the file
-        :type mode: str
-        :returns: This object
-        :rtype: ApRESFile
-        """
-
-        if path:
-            self.path = path
-
-        self.fp = open(self.path, mode, encoding=self.DEFAULTS['file_encoding'])
-
-        return self
-
-    def close(self):
-        """
-        Close the file
-
-        :returns: This object
-        :rtype: ApRESFile
-        """
-
-        self.fp.close()
-        self.fp = None
-
-        return self
+        if self.fp:
+            self.header_start = self.fp.tell()
 
     def reset_init_defaults(self):
         """
@@ -413,9 +357,137 @@ class ApRESFile(object):
 
         fp.write(np.asarray(self.data[records.start:records.stop:records.step, samples.start:samples.stop:samples.step], order=self.DEFAULTS['data_dim_order']))
 
+class ApRESFile(object):
+    """
+    Context manager for reading and writing ApRES files
+    """
+
+    DEFAULTS = {
+        'file_encoding': 'latin-1',
+        'netcdf_suffix': '.nc',
+        'netcdf_add_history': True,
+        'netcdf_group_name': 'burst{:d}',
+        'netcdf_var_name': 'data',
+        'netcdf_attrs': {
+            'units': '1',
+            'long_name': 'Sub Burst ADC Samples'
+        }
+    }
+
+    def __init__(self, path=None):
+        """
+        Constructor
+
+        :param path: Path to the file
+        :type path: str
+        """
+
+        self.path = path
+        self.fp = None
+        self.file_size = -1
+        self.bursts = []
+
+    def __enter__(self):
+        """
+        Enter the runtime context for this object
+
+        The file is opened
+
+        :returns: This object
+        :rtype: ApRESFile
+        """
+
+        return self.open(self.path)
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        """
+        Exit the runtime context for this object
+
+        The file is closed
+
+        :returns: False
+        :rtype: bool
+        """
+
+        self.close()
+
+        return False         # This ensures any exception is re-raised
+
+    def open(self, path=None, mode='r'):
+        """
+        Open the given file
+
+        :param path: Path to the file
+        :type path: str
+        :param mode: Mode in which to open the file
+        :type mode: str
+        :returns: This object
+        :rtype: ApRESFile
+        """
+
+        if path:
+            self.path = path
+
+        self.fp = open(self.path, mode, encoding=self.DEFAULTS['file_encoding'])
+        self.file_size = os.fstat(self.fp.fileno()).st_size
+
+        return self
+
+    def close(self):
+        """
+        Close the file
+
+        :returns: This object
+        :rtype: ApRESFile
+        """
+
+        self.fp.close()
+        self.fp = None
+
+        return self
+
+    def eof(self):
+        """
+        Report whether the end-of-file has been reached
+
+        :returns: True if EOF has been reached, False otherwise
+        :rtype: bool
+        """
+
+        return self.fp.tell() >= self.file_size
+
+    def read_burst(self):
+        """
+        Read a burst block from the file
+
+        :returns: The burst
+        :rtype: ApRESBurst
+        """
+
+        burst = ApRESBurst(fp=self.fp)
+        burst.read_data()
+
+        return burst
+
+    def read(self):
+        """
+        Reads all burst blocks from the file
+
+        The bursts are available in the bursts list
+
+        :returns: The bursts
+        :rtype: list
+        """
+
+        while not self.eof():
+            burst = self.read_burst()
+            self.bursts.append(burst)
+
+        return self.bursts
+
     def to_apres_dat(self, path, records=None, samples=None):
         """
-        Write the header and data to the given file path as an ApRES .dat file
+        Write the bursts to the given file path as an ApRES .dat file
 
         When rewriting the ApRES data to a new file, the sub bursts (records),
         and the ADC samples for those selected records, can be subsetted.  The
@@ -429,20 +501,92 @@ class ApRESFile(object):
         :type samples: range object
         """
 
-        if self.data_start == -1:
-            self.read_data()
+        if not self.bursts:
+            self.read()
+
+        # We append each burst, so ensure file is empty if it already exists
+        with open(path, 'w') as fout:
+            pass
 
         # The ApRES .dat file format is a mixed mode file.  The header is
         # text, and the data section is binary
-        with open(path, 'w') as fout:
-            self.write_header(fout, records=records, samples=samples)
+        for burst in self.bursts:
+            with open(path, 'a') as fout:
+                burst.write_header(fout, records=records, samples=samples)
 
-        with open(path, 'ab') as fout:
-            self.write_data(fout, records=records, samples=samples)
+            with open(path, 'ab') as fout:
+                burst.write_data(fout, records=records, samples=samples)
+
+    def burst_to_nc_object(self, burst, nco):
+        """
+        Map the given burst to the given netCDF object
+
+        The netCDF object can either be a Dataset or a Group
+
+        :param burst: The burst
+        :type burst: ApRESBurst
+        :param nco: A netCDF object (one of Dataset or Group)
+        :type nco: netCDF4._netCDF4.Dataset or netCDF4._netCDF4.Group
+        :returns: The netCDF object
+        :rtype: netCDF4._netCDF4.Dataset or netCDF4._netCDF4.Group
+        """
+
+        # Write the burst header items as netCDF object attributes
+        for key in burst.header:
+            nco.setncattr(key, burst.header[key])
+
+        for j, key in enumerate(burst.DEFAULTS['data_dim_keys']):
+            nco.createDimension(key, burst.data_shape[j])
+
+        data = nco.createVariable(self.DEFAULTS['netcdf_var_name'], burst.data_type, tuple(burst.DEFAULTS['data_dim_keys']))
+        data.setncatts(self.DEFAULTS['netcdf_attrs'])
+        data[:] = burst.data
+
+        return nco
+
+    def nc_object_to_burst(self, nco):
+        """
+        Map the given netCDF object to an ApRESBurst object
+
+        The netCDF object can either be a Dataset or a Group
+
+        :param nco: A netCDF object (one of Dataset or Group)
+        :type nco: netCDF4._netCDF4.Dataset or netCDF4._netCDF4.Group
+        :returns: The burst object
+        :rtype: ApRESBurst
+        """
+
+        # We make a copy, otherwise data is invalid after file is closed
+        data = nco.variables[self.DEFAULTS['netcdf_var_name']][:]
+        attrs = vars(nco).copy()
+
+        burst = ApRESBurst()
+        burst.data_start = 0              # Stop data being read from file
+
+        # Remove any attributes that weren't part of the original burst's header
+        try:
+            del attrs['history']
+        except KeyError:
+            pass
+
+        # Reconstruct the original burst from the parsed header and data.  We
+        # initially set the header_lines to be the parsed header which allows us
+        # to determine the burst format version, and thus setup the DEFAULTS
+        # parsing tokens accordingly.  This then allows us to correctly
+        # reconstruct the raw header lines with the appropriate header line
+        # delimiter for the burst format version
+        burst.data = data
+        burst.header = attrs
+        burst.header_lines = burst.header
+        burst.determine_file_format_version()
+        burst.reconstruct_header_lines()
+        burst.configure_from_header()
+
+        return burst
 
     def to_netcdf(self, path=None, mode='w'):
         """
-        Write the header and data to the given file path as a netCDF4 file
+        Write the bursts to the given file path as a netCDF4 file
 
         The default netCDF file path is the same as the input file, but with
         a .nc suffix
@@ -453,29 +597,21 @@ class ApRESFile(object):
         :type mode: str
         """
 
-        if self.data_start == -1:
-            self.read_data()
+        if not self.bursts:
+            self.read()
 
         path = path or os.path.splitext(self.path)[0] + self.DEFAULTS['netcdf_suffix']
-        i = 0
 
         ncfile = Dataset(path, mode)
-
-        # Write the file header items as global attributes
-        for key in self.header:
-            ncfile.setncattr(key, self.header[key])
 
         # Add the command line invocation to global history attribute
         if self.DEFAULTS['netcdf_add_history']:
             ncfile.history = ' '.join(sys.argv)
 
-        for key in self.DEFAULTS['data_dim_keys']:
-            ncfile.createDimension(key, self.data_shape[i])
-            i += 1
-
-        data = ncfile.createVariable('data', self.data_type, tuple(self.DEFAULTS['data_dim_keys']))
-        data.setncatts(self.DEFAULTS['netcdf_attrs'])
-        data[:] = self.data
+        # Write each burst as a netCDF4/HDF5 group
+        for i, burst in enumerate(self.bursts):
+            group = ncfile.createGroup(self.DEFAULTS['netcdf_group_name'].format(i))
+            self.burst_to_nc_object(burst, group)
 
         ncfile.close()
 

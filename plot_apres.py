@@ -102,27 +102,17 @@ python3 plot_apres.py -t -g 3 2 filename.dat
 
     return args
 
-if __name__ == '__main__':
-    args = parse_cmdln()
-    suffix = os.path.splitext(args.filename)[1]
+def plot_data(args, data, title):
+    """
+    Plot the given data
 
-    if suffix.lower() == '.dat':
-        with ApRESFile(args.filename) as f:
-            data = f.read_data()
-
-            # Can't plot a radargram for aggregated data
-            if int(f.header['Average']) > 0:
-                args.type = 'traces'
-    elif suffix.lower() == '.nc':
-        with Dataset(args.filename, 'r') as f:
-            # We make a copy, otherwise data is invalid after file is closed
-            data = f.variables['data'][:]
-
-            # Can't plot a radargram for aggregated data
-            if int(f.getncattr('Average')) > 0:
-                args.type = 'traces'
-    else:
-        raise ValueError('Unknown or unsupported file type: {}'.format(suffix))
+    :param args: The parsed command line arguments object
+    :type args: argparse.Namespace object
+    :param data: The data to plot
+    :type data: numpy.array
+    :param title: The title for the plot
+    :type title: str
+    """
 
     if args.type == 'traces':
         (nrows, ncols) = args.grid
@@ -149,6 +139,41 @@ if __name__ == '__main__':
         # Plot the vertical traces as a radargram
         construct_radargram(plt, mat, xaxis, yaxis, contrast=args.contrast, cmap=args.cmap)
 
-    plt.suptitle(os.path.basename(args.filename))
+    plt.suptitle(title)
     plt.show()
+
+def plot_burst(args, burst):
+    """
+    Plot the given burst
+
+    :param args: The parsed command line arguments object
+    :type args: argparse.Namespace object
+    :param burst: The burst
+    :type burst: ApRESBurst
+    """
+
+    # Can't plot a radargram for aggregated data
+    if int(burst.header['Average']) > 0:
+        args.type = 'traces'
+
+    title = f'{os.path.basename(args.filename)}: {burst.header["Time stamp"]}'
+    plot_data(args, burst.data, title)
+
+if __name__ == '__main__':
+    args = parse_cmdln()
+    suffix = os.path.splitext(args.filename)[1]
+
+    if suffix.lower() == '.dat':
+        with ApRESFile(args.filename) as f:
+            for burst in f.read():
+                plot_burst(args, burst)
+    elif suffix.lower() == '.nc':
+        with Dataset(args.filename, 'r') as f:
+            af = ApRESFile()
+
+            for key in f.groups:
+                burst = af.nc_object_to_burst(f.groups[key])
+                plot_burst(args, burst)
+    else:
+        raise ValueError('Unknown or unsupported file type: {}'.format(suffix))
 

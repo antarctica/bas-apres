@@ -17,32 +17,13 @@ if __name__ == '__main__':
 
     # We can optionally be given an explicit output filename 
     outfile = sys.argv[2] if len(sys.argv) > 2 else os.path.splitext(infile)[0] + APRES_SUFFIX
+    fout = ApRESFile(path=outfile)
 
-    with Dataset(infile, 'r') as f:
-        # We make a copy, otherwise data is invalid after file is closed
-        data = f.variables['data'][:]
-        attrs = vars(f).copy()
+    with Dataset(infile, 'r') as fin:
+        # Convert each netCDF group to an ApRESBurst object
+        for key in fin.groups:
+            burst = fout.nc_object_to_burst(fin.groups[key])
+            fout.bursts.append(burst)
 
-    f = ApRESFile(path=outfile)
-    f.data_start = 0              # Stop data being read from file
-
-    # Remove any attributes that weren't part of the original file's header
-    try:
-        del attrs['history']
-    except KeyError:
-        pass
-
-    # Reconstruct the original file from the parsed header and data.  We
-    # initially set the header_lines to be the parsed header which allows us
-    # to determine the file format version, and thus setup the DEFAULTS
-    # parsing tokens accordingly.  This then allows us to correctly
-    # reconstruct the raw header lines with the appropriate header line
-    # delimiter for the file format version
-    f.data = data
-    f.header = attrs
-    f.header_lines = f.header
-    f.determine_file_format_version()
-    f.reconstruct_header_lines()
-    f.configure_from_header()
-    f.to_apres_dat(outfile)
+    fout.to_apres_dat(outfile)
 

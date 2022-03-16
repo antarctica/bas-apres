@@ -5,7 +5,10 @@ import warnings
  
 import numpy as np
 
-from apres import ApRESBurst, ApRESFile
+from apres import __version__, ApRESBurst, ApRESFile
+
+def test_version():
+    assert __version__ == '0.1.0'
 
 class TestApRESBurst(unittest.TestCase):
 

@@ -2,8 +2,11 @@ import unittest
 from unittest.mock import Mock, patch
 import os
 import warnings
+import tempfile
+import hashlib
  
 import numpy as np
+from netCDF4 import Dataset
 
 from apres import __version__, ApRESBurst, ApRESFile
 
@@ -533,4 +536,48 @@ class TestApRESFile(unittest.TestCase):
         f.open(in_file)
         f.read()
         f.close()
+
+class TestConversion(unittest.TestCase):
+
+    base = os.path.dirname(__file__)
+
+    def compare_original_with_recovered(self, in_file):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            nc_file = tmp_dir + '/converted.nc'
+            recovered_file = tmp_dir + '/recovered.dat'
+
+            # Convert to netCDF4
+            with ApRESFile(in_file) as f:
+                f.to_netcdf(nc_file)
+
+            # Recover the ApRES file
+            fout = ApRESFile()
+
+            with Dataset(nc_file, 'r') as fin:
+                for key in fin.groups:
+                    burst = fout.nc_object_to_burst(fin.groups[key])
+                    fout.bursts.append(burst)
+
+            fout.to_apres_dat(recovered_file)
+
+            # Compare the original and the recovered files
+            with open(in_file, 'rb') as f:
+                hash1 = hashlib.sha1(f.read()).hexdigest()
+
+            with open(recovered_file, 'rb') as f:
+                hash2 = hashlib.sha1(f.read()).hexdigest()
+
+        return (hash1, hash2)
+
+    def test_conversion_and_recovery_v2(self):
+        in_file = self.base + '/short-test-data-v2.dat'
+        hash1, hash2 = self.compare_original_with_recovered(in_file)
+        assert hash1 == hash2
+
+    def test_conversion_and_recovery_v1(self):
+        # When converting v1 format files, the original and recovered are
+        # identical except for trivial differences in whitespace in the header
+        in_file = self.base + '/short-test-data-v1.dat'
+        hash1, hash2 = self.compare_original_with_recovered(in_file)
+        assert hash1 != hash2
 

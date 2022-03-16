@@ -10,16 +10,16 @@ if __name__ == '__main__':
     with ApRESFile(args.infile) as f:
         for burst in f.read():
             header = burst.header
-            print('header: header_start = {}'.format(burst.header_start))
-            print('header: data_start = {}'.format(burst.data_start))
-            print('header: data_shape = {}'.format(burst.data_shape))
-            print('header: dict = ')
+            print(f'header: header_start = {burst.header_start}')
+            print(f'header: data_start = {burst.data_start}')
+            print(f'header: data_shape = {burst.data_shape}')
+            print(f'header: dict = ')
             print(header)
 
             data = burst.data
-            print('data: len(data) = {}'.format(len(data)))
-            print('data: data.size = {}'.format(data.size))
-            print('data: data.shape = {}'.format(data.shape))
+            print(f'data: len(data) = {len(data)}')
+            print(f'data: data.size = {data.size}')
+            print(f'data: data.shape = {data.shape}')
 
             # Show a small selection of the first records and samples
             if len(data) > 0:

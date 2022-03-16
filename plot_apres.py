@@ -174,5 +174,5 @@ if __name__ == '__main__':
                 burst = af.nc_object_to_burst(f.groups[key])
                 plot_burst(args, burst)
     else:
-        raise ValueError('Unknown or unsupported file type: {}'.format(suffix))
+        raise ValueError(f'Unknown or unsupported file type: {suffix}')
 

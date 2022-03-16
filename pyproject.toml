@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "bas-apres"
+version = "0.1.0"
+description = "Package for working with BAS ApRES files"
+authors = ["Paul Breen <pbree@bas.ac.uk>"]
+license = "Apache-2.0"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+numpy = "^1.17.2"
+matplotlib = "^3.4.3"
+netCDF4 = "^1.5.2"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.0.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

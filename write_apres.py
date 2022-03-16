@@ -1,25 +1,22 @@
-import sys
-import os
+import argparse
 
 from apres import ApRESFile
 
 if __name__ == '__main__':
-    try:
-        infile = sys.argv[1]
-        outfile = sys.argv[2]
-    except IndexError:
-        progname = os.path.basename(sys.argv[0])
-        print('Usage: {} infile.dat outfile.dat [records [samples]]'.format(progname))
-        sys.exit(2)
+    parser = argparse.ArgumentParser(description='read a raw ApRES file and write to another raw ApRES file, optionally subsetting the data ')
+    parser.add_argument('infile', help='ApRES raw file')
+    parser.add_argument('outfile', help='ApRES raw file')
+    parser.add_argument('-r', '--records', help='only write out the first RECORDS sub bursts', dest='records', default=None, type=int)
+    parser.add_argument('-s', '--samples', help='only write out the first SAMPLES ADC samples', dest='samples', default=None, type=int)
+    args = parser.parse_args()
 
-    (records, samples) = (None, None)
-
-    # We can optionally select a subset of records and/or samples for output
-    if len(sys.argv) > 3:
-        records = range(int(sys.argv[3]))
-    if len(sys.argv) > 4:
-        samples = range(int(sys.argv[4]))
+    # We can optionally select a subset of records and/or samples for output.
+    # These have to be range objects
+    if args.records:
+        args.records = range(args.records)
+    if args.samples:
+        args.samples = range(args.samples)
  
-    with ApRESFile(infile) as f:
-        f.to_apres_dat(outfile, records=records, samples=samples)
+    with ApRESFile(args.infile) as f:
+        f.to_apres_dat(args.outfile, records=args.records, samples=args.samples)
 

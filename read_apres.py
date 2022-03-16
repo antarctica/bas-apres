@@ -1,17 +1,13 @@
-import sys
-import os
+import argparse
 
 from apres import ApRESFile
 
 if __name__ == '__main__':
-    try:
-        filename = sys.argv[1]
-    except IndexError:
-        progname = os.path.basename(sys.argv[0])
-        print('Usage: {} filename.dat'.format(progname))
-        sys.exit(2)
+    parser = argparse.ArgumentParser(description='print the header, a sample of the data, and diagnostics, from the given raw ApRES file')
+    parser.add_argument('infile', help='ApRES raw file')
+    args = parser.parse_args()
 
-    with ApRESFile(filename) as f:
+    with ApRESFile(args.infile) as f:
         for burst in f.read():
             header = burst.header
             print('header: header_start = {}'.format(burst.header_start))

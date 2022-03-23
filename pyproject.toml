@@ -5,6 +5,12 @@ description = "Package for working with BAS ApRES files"
 authors = ["Paul Breen <pbree@bas.ac.uk>"]
 license = "Apache-2.0"
 
+# This is required because the apres name is taken on PyPI, hence "name"
+# above is different to the directory/module name
+packages = [
+    {include = "apres"}
+]
+
 [tool.poetry.dependencies]
 python = "^3.7"
 numpy = "^1.17.2"

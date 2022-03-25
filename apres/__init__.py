@@ -487,16 +487,19 @@ class ApRESFile(object):
 
         return self.bursts
 
-    def to_apres_dat(self, path, subbursts=None, samples=None):
+    def to_apres_dat(self, path, bursts=None, subbursts=None, samples=None):
         """
         Write the bursts to the given file path as an ApRES .dat file
 
-        When rewriting the ApRES data to a new file, the subbursts, and the
-        ADC samples for those selected subbursts, can be subsetted.  The
-        subbursts and samples keyword arguments must specify a range object
+        When rewriting the ApRES data to a new file, the bursts, subbursts,
+        and the ADC samples for those selected subbursts, can be subsetted.
+        The bursts, subbursts, and samples keyword arguments must specify a
+        range object
 
         :param path: The path of the output file
         :type path: str
+        :param bursts: A range specifying the bursts to be written
+        :type bursts: range object
         :param subbursts: A range specifying the subbursts to be written
         :type subbursts: range object
         :param samples: A range specifying the samples to be written
@@ -506,13 +509,16 @@ class ApRESFile(object):
         if not self.bursts:
             self.read()
 
+        if not bursts:
+            bursts = range(len(self.bursts))
+
         # We append each burst, so ensure file is empty if it already exists
         with open(path, 'w') as fout:
             pass
 
         # The ApRES .dat file format is a mixed mode file.  The header is
         # text, and the data section is binary
-        for burst in self.bursts:
+        for burst in self.bursts[bursts.start:bursts.stop:bursts.step]:
             with open(path, 'a') as fout:
                 burst.write_header(fout, subbursts=subbursts, samples=samples)
 

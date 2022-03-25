@@ -537,6 +537,41 @@ class TestApRESFile(unittest.TestCase):
         f.read()
         f.close()
 
+    def test_to_apres_dat_uses_default_dimensions(self):
+        in_file = self.base + '/short-test-data-ts.dat'
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            out_file = tmp_dir + '/output.dat'
+
+            with ApRESFile(in_file) as fin:
+                fin.to_apres_dat(out_file)
+                in_nbursts = len(fin.bursts)
+
+            with ApRESFile(out_file) as fout:
+                fout.read()
+                out_nbursts = len(fout.bursts)
+
+            assert in_nbursts == out_nbursts
+
+    def test_to_apres_dat_rewrite_dimensions(self):
+        in_file = self.base + '/short-test-data-ts.dat'
+        bursts = range(3)
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            out_file = tmp_dir + '/output.dat'
+
+            # Subset the input file as the first three bursts
+            with ApRESFile(in_file) as fin:
+                fin.to_apres_dat(out_file, bursts=bursts)
+                in_nbursts = len(fin.bursts)
+
+            with ApRESFile(out_file) as fout:
+                fout.read()
+                out_nbursts = len(fout.bursts)
+
+            assert in_nbursts == 5
+            assert out_nbursts == 3
+
 class TestConversion(unittest.TestCase):
 
     base = os.path.dirname(__file__)

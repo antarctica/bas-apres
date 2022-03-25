@@ -95,11 +95,11 @@ python3 -m apres.read_apres filename.dat
 
 #### write_apres.py
 
-This script will read the given input ApRES .dat file, and for each burst, write the header and data to the given output ApRES .dat file.  Optionally a subset of each input burst can be written out, specified as the first `subbursts` subbursts, and the first `samples` ADC samples of these subbursts.  If `subbursts` and `samples` are not specified, then the output file is identical to the input file.
+This script will read the given input ApRES .dat file, and for each burst, write the header and data to the given output ApRES .dat file.  Optionally a subset of bursts can be written out, specified as the first `bursts` bursts of the input file.  In addition a subset of each burst can be written out, specified as the first `subbursts` subbursts, and the first `samples` ADC samples of these subbursts.  If `bursts`, `subbursts` and `samples` are not specified, then the output file is identical to the input file.
 
 The script's primary purpose is as a simple example of how to use the `ApRESFile` class to rewrite an ApRES .dat file.
 
 ```bash
-python3 -m apres.write_apres [-u SUBBURSTS] [-s SAMPLES] infile.dat outfile.dat
+python3 -m apres.write_apres [-b BURSTS] [-u SUBBURSTS] [-s SAMPLES] infile.dat outfile.dat
 ```
 

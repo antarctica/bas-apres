@@ -7,7 +7,7 @@ from apres import ApRESFile
 
 APRES_SUFFIX = '.dat'
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='recover the raw ApRES file from a converted netCDF4 file')
     parser.add_argument('infile', help='converted netCDF file of raw ApRES data')
     parser.add_argument('outfile', help='ApRES raw file', default=None, nargs='?')
@@ -26,4 +26,7 @@ if __name__ == '__main__':
             fout.bursts.append(burst)
 
     fout.to_apres_dat(args.outfile)
+
+if __name__ == '__main__':
+    main()
 

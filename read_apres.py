@@ -2,7 +2,7 @@ import argparse
 
 from apres import ApRESFile
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='print the header, a sample of the data, and diagnostics, from the given raw ApRES file')
     parser.add_argument('infile', help='ApRES raw file')
     args = parser.parse_args()
@@ -29,4 +29,7 @@ if __name__ == '__main__':
                 print(data[0:nrecords, 0:nsamples])
 
         print(f'number of bursts = {len(f.bursts)}')
+
+if __name__ == '__main__':
+    main()
 

@@ -2,7 +2,7 @@ import argparse
 
 from apres import ApRESFile
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='read a raw ApRES file and write to another raw ApRES file, optionally subsetting the data ')
     parser.add_argument('infile', help='ApRES raw file')
     parser.add_argument('outfile', help='ApRES raw file')
@@ -19,4 +19,7 @@ if __name__ == '__main__':
  
     with ApRESFile(args.infile) as f:
         f.to_apres_dat(args.outfile, records=args.records, samples=args.samples)
+
+if __name__ == '__main__':
+    main()
 

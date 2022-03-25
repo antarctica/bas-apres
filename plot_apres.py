@@ -158,7 +158,7 @@ def plot_burst(args, burst):
     title = f'{os.path.basename(args.filename)}: {burst.header["Time stamp"]}'
     plot_data(args, burst.data, title)
 
-if __name__ == '__main__':
+def main():
     args = parse_cmdln()
     suffix = os.path.splitext(args.filename)[1]
 
@@ -175,4 +175,7 @@ if __name__ == '__main__':
                 plot_burst(args, burst)
     else:
         raise ValueError(f'Unknown or unsupported file type: {suffix}')
+
+if __name__ == '__main__':
+    main()
 

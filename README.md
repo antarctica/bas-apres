@@ -35,7 +35,7 @@ The conversion is a straightforward reversal of the original conversion.  For th
 
 #### plot_apres.py
 
-This script will plot the `N_ADC_SAMPLES` vs `NSubBursts` as a radargram, for each burst in the file (or group for converted netCDF files).  If the `Average` header item > 0 (and so each sub burst has been aggregated), then the script will instead plot the first sub burst as a single trace.  The file can be either an ApRES .dat file, or a converted netCDF file.
+This script will plot the `N_ADC_SAMPLES` vs `NSubBursts` as a radargram, for each burst in the file (or group for converted netCDF files).  If the `Average` header item > 0 (and so each subburst has been aggregated), then the script will instead plot the first subburst as a single trace.  The file can be either an ApRES .dat file, or a converted netCDF file.
 
 ```bash
 python3 -m apres.plot_apres [-h] [-r | -t] [-g GRID GRID] [-c CONTRAST] [-m CMAP]
@@ -85,7 +85,7 @@ python3 -m apres.plot_apres -t -g 3 2 filename.dat
 
 #### read_apres.py
 
-This script will read the given ApRES .dat file, and for each burst, print the results of parsing the header, such as the dimensions of the data array, and the parsed header dictionary.  It will also *head* the data section (by default the first 10 samples of the first 10 sub burts), to give an initial simple look at the data.
+This script will read the given ApRES .dat file, and for each burst, print the results of parsing the header, such as the dimensions of the data array, and the parsed header dictionary.  It will also *head* the data section (by default the first 10 samples of the first 10 subbursts), to give an initial simple look at the data.
 
 The script's primary purpose is as a simple example of how to use the `ApRESFile` class to read an ApRES .dat file.
 
@@ -95,11 +95,11 @@ python3 -m apres.read_apres filename.dat
 
 #### write_apres.py
 
-This script will read the given input ApRES .dat file, and for each burst, write the header and data to the given output ApRES .dat file.  Optionally a subset of each input burst can be written out, specified as the first `records` sub burts, and the first `samples` ADC samples of these records.  If `records` and `samples` are not specified, then the output file is identical to the input file.
+This script will read the given input ApRES .dat file, and for each burst, write the header and data to the given output ApRES .dat file.  Optionally a subset of each input burst can be written out, specified as the first `subbursts` subbursts, and the first `samples` ADC samples of these subbursts.  If `subbursts` and `samples` are not specified, then the output file is identical to the input file.
 
 The script's primary purpose is as a simple example of how to use the `ApRESFile` class to rewrite an ApRES .dat file.
 
 ```bash
-python3 -m apres.write_apres [-r RECORDS] [-s SAMPLES] infile.dat outfile.dat
+python3 -m apres.write_apres [-u SUBBURSTS] [-s SAMPLES] infile.dat outfile.dat
 ```
 

@@ -452,9 +452,9 @@ class TestApRESBurst(unittest.TestCase):
         fout = Mock(write=Mock())
 
         fin.write_data(fout)
-        records = range(fin.data_shape[0])
+        subbursts = range(fin.data_shape[0])
         samples = range(fin.data_shape[1])
-        data_expected = np.asarray(fin.data[records.start:records.stop:records.step, samples.start:samples.stop:samples.step], order=fin.DEFAULTS['data_dim_order'])
+        data_expected = np.asarray(fin.data[subbursts.start:subbursts.stop:subbursts.step, samples.start:samples.stop:samples.step], order=fin.DEFAULTS['data_dim_order'])
         data_actual = fout.write.call_args[0][0]
         self.assertTrue(np.array_equal(data_actual, data_expected))
 
@@ -470,8 +470,8 @@ class TestApRESBurst(unittest.TestCase):
         fout = Mock(write=Mock())
 
         fin.write_data(fout, samples=samples)
-        records = range(fin.data_shape[0])
-        data_expected = np.asarray(fin.data[records.start:records.stop:records.step, samples.start:samples.stop:samples.step], order=fin.DEFAULTS['data_dim_order'])
+        subbursts = range(fin.data_shape[0])
+        data_expected = np.asarray(fin.data[subbursts.start:subbursts.stop:subbursts.step, samples.start:samples.stop:samples.step], order=fin.DEFAULTS['data_dim_order'])
         data_actual = fout.write.call_args[0][0]
         self.assertTrue(np.array_equal(data_actual, data_expected))
 

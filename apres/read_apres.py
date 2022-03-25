@@ -21,12 +21,12 @@ def main():
             print(f'data: data.size = {data.size}')
             print(f'data: data.shape = {data.shape}')
 
-            # Show a small selection of the first records and samples
+            # Show a small selection of the first subbursts and samples
             if len(data) > 0:
-                nrecords = 10 if data.shape[0] > 10 else data.shape[0]
+                nsubbursts = 10 if data.shape[0] > 10 else data.shape[0]
                 nsamples = 10 if data.shape[1] > 10 else data.shape[1]
                 print('data: head = ')
-                print(data[0:nrecords, 0:nsamples])
+                print(data[0:nsubbursts, 0:nsamples])
 
         print(f'number of bursts = {len(f.bursts)}')
 

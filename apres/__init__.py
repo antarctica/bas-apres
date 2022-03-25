@@ -311,14 +311,14 @@ class ApRESBurst(object):
 
         return self.header_lines
 
-    def write_header(self, fp, records=None, samples=None):
+    def write_header(self, fp, subbursts=None, samples=None):
         """
         Write the header to the given file object
 
         :param fp: The open file object of the output file
         :type fp: file object
-        :param records: A range specifying the records to be written
-        :type records: range object
+        :param subbursts: A range specifying the subbursts to be written
+        :type subbursts: range object
         :param samples: A range specifying the samples to be written
         :type samples: range object
         """
@@ -329,22 +329,22 @@ class ApRESBurst(object):
         eol = self.DEFAULTS['header_line_eol']
 
         for line in self.header_lines:
-            # Ensure requested records & samples are reflected in the header
-            if records and re.match(self.DEFAULTS['data_dim_keys'][0], line):
-                line = self.format_header_line(self.DEFAULTS['data_dim_keys'][0], len(records))
+            # Ensure requested subbursts & samples are reflected in the header
+            if subbursts and re.match(self.DEFAULTS['data_dim_keys'][0], line):
+                line = self.format_header_line(self.DEFAULTS['data_dim_keys'][0], len(subbursts))
             if samples and re.match(self.DEFAULTS['data_dim_keys'][1], line):
                 line = self.format_header_line(self.DEFAULTS['data_dim_keys'][1], len(samples))
 
             fp.write(line + eol)
 
-    def write_data(self, fp, records=None, samples=None):
+    def write_data(self, fp, subbursts=None, samples=None):
         """
         Write the data to the given file object
 
         :param fp: The open file object of the output file
         :type fp: file object
-        :param records: A range specifying the records to be written
-        :type records: range object
+        :param subbursts: A range specifying the subbursts to be written
+        :type subbursts: range object
         :param samples: A range specifying the samples to be written
         :type samples: range object
         """
@@ -352,12 +352,12 @@ class ApRESBurst(object):
         if self.data_start == -1:
             self.read_data()
 
-        if not records:
-            records = range(self.data_shape[0])
+        if not subbursts:
+            subbursts = range(self.data_shape[0])
         if not samples:
             samples = range(self.data_shape[1])
 
-        fp.write(np.asarray(self.data[records.start:records.stop:records.step, samples.start:samples.stop:samples.step], order=self.DEFAULTS['data_dim_order']))
+        fp.write(np.asarray(self.data[subbursts.start:subbursts.stop:subbursts.step, samples.start:samples.stop:samples.step], order=self.DEFAULTS['data_dim_order']))
 
 class ApRESFile(object):
     """
@@ -487,18 +487,18 @@ class ApRESFile(object):
 
         return self.bursts
 
-    def to_apres_dat(self, path, records=None, samples=None):
+    def to_apres_dat(self, path, subbursts=None, samples=None):
         """
         Write the bursts to the given file path as an ApRES .dat file
 
-        When rewriting the ApRES data to a new file, the sub bursts (records),
-        and the ADC samples for those selected records, can be subsetted.  The
-        records and samples keyword arguments must specify a range object
+        When rewriting the ApRES data to a new file, the subbursts, and the
+        ADC samples for those selected subbursts, can be subsetted.  The
+        subbursts and samples keyword arguments must specify a range object
 
         :param path: The path of the output file
         :type path: str
-        :param records: A range specifying the records to be written
-        :type records: range object
+        :param subbursts: A range specifying the subbursts to be written
+        :type subbursts: range object
         :param samples: A range specifying the samples to be written
         :type samples: range object
         """
@@ -514,10 +514,10 @@ class ApRESFile(object):
         # text, and the data section is binary
         for burst in self.bursts:
             with open(path, 'a') as fout:
-                burst.write_header(fout, records=records, samples=samples)
+                burst.write_header(fout, subbursts=subbursts, samples=samples)
 
             with open(path, 'ab') as fout:
-                burst.write_data(fout, records=records, samples=samples)
+                burst.write_data(fout, subbursts=subbursts, samples=samples)
 
     def burst_to_nc_object(self, burst, nco):
         """

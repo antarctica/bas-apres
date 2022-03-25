@@ -49,8 +49,8 @@ trap "test -d \"$tmp_dir\" && rm -rf \"$tmp_dir\"" EXIT
 nc_file="$tmp_dir/$NC_FILE"
 recovered_file="$tmp_dir/$RECOVERED_FILE"
 
-python apres_to_nc.py "$in_file" "$nc_file"
-python nc_to_apres.py "$nc_file" "$recovered_file"
+python -m apres.apres_to_nc "$in_file" "$nc_file"
+python -m apres.nc_to_apres "$nc_file" "$recovered_file"
 
 # * For V1 ApRES format files, we can recover the original .dat from
 #   a converted .nc file, except for a trivial difference in whitespace in the

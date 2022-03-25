@@ -61,27 +61,27 @@ def parse_cmdln():
 
 Plot the given ApRES .dat file as a radargram:
 
-python3 plot_apres.py filename.dat
+python3 -m apres.plot_apres filename.dat
 
 Plot the given converted netCDF file as a radargram:
 
-python3 plot_apres.py filename.nc
+python3 -m apres.plot_apres filename.nc
 
 Plot the given ApRES file as a radargram, increasing the contrast:
 
-python3 plot_apres.py -c 10 filename.dat
+python3 -m apres.plot_apres -c 10 filename.dat
 
 Same as above, but with a blue-white-red colour map:
 
-python3 plot_apres.py -c 10 -m bwr filename.dat
+python3 -m apres.plot_apres -c 10 -m bwr filename.dat
 
 Plot the first trace from the given ApRES file:
 
-python3 plot_apres.py -t filename.dat
+python3 -m apres.plot_apres -t filename.dat
 
 Plot the first 6 traces, in a 3x2 grid:
 
-python3 plot_apres.py -t -g 3 2 filename.dat
+python3 -m apres.plot_apres -t -g 3 2 filename.dat
 """
 
     parser = argparse.ArgumentParser(description='plot ApRES data, either from a .dat file, or a converted netCDF file', epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter)

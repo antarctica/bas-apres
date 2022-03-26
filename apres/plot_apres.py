@@ -162,11 +162,11 @@ def main():
     args = parse_cmdln()
     suffix = os.path.splitext(args.filename)[1]
 
-    if suffix.lower() == '.dat':
+    if suffix.lower() == ApRESFile.DEFAULTS['apres_suffix']:
         with ApRESFile(args.filename) as f:
             for burst in f.read():
                 plot_burst(args, burst)
-    elif suffix.lower() == '.nc':
+    elif suffix.lower() == ApRESFile.DEFAULTS['netcdf_suffix']:
         with Dataset(args.filename, 'r') as f:
             af = ApRESFile()
 

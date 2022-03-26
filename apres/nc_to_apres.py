@@ -5,8 +5,6 @@ from netCDF4 import Dataset
 
 from apres import ApRESFile
 
-APRES_SUFFIX = '.dat'
-
 def main():
     parser = argparse.ArgumentParser(description='recover the raw ApRES file from a converted netCDF4 file')
     parser.add_argument('infile', help='converted netCDF file of raw ApRES data')
@@ -15,7 +13,7 @@ def main():
 
     # We can optionally be given an explicit output filename 
     if not args.outfile:
-        args.outfile = os.path.splitext(args.infile)[0] + APRES_SUFFIX
+        args.outfile = os.path.splitext(args.infile)[0] + ApRESFile.DEFAULTS['apres_suffix']
 
     fout = ApRESFile()
 

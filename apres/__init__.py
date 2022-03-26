@@ -366,6 +366,7 @@ class ApRESFile(object):
 
     DEFAULTS = {
         'file_encoding': 'latin-1',
+        'apres_suffix': '.dat',
         'netcdf_suffix': '.nc',
         'netcdf_add_history': True,
         'netcdf_group_name': 'burst{:d}',

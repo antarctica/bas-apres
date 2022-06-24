@@ -11,7 +11,7 @@ from netCDF4 import Dataset
 from apres import __version__, ApRESBurst, ApRESFile
 
 def test_version():
-    assert __version__ == '0.1.0'
+    assert __version__ == '0.1.1'
 
 class TestApRESBurst(unittest.TestCase):
 

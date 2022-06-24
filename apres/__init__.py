@@ -31,7 +31,7 @@ class ApRESBurst(object):
         'header_line_delim': '=',
         'header_line_eol': '\r\n',
         'data_type_key': 'Average',
-        'data_types': ['<u2','<u2','<u4'],
+        'data_types': ['<u2','<f4','<u4'],
         'data_dim_keys': ['NSubBursts', 'N_ADC_SAMPLES'],
         'data_dim_order': 'C'
     }

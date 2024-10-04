@@ -27,7 +27,7 @@ class ApRESBurst(object):
             'start': '\r\n*** Burst Header ***',
             'end': '\r\n*** End Header ***'
         },
-        'end_of_header_re': '\*\*\* End Header',
+        'end_of_header_re': r'\*\*\* End Header',
         'header_line_delim': '=',
         'header_line_eol': '\r\n',
         'data_type_key': 'Average',

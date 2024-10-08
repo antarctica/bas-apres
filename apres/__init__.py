@@ -11,6 +11,7 @@ import re
 import os
 import sys
 import warnings
+import math
 
 import numpy as np
 from netCDF4 import Dataset
@@ -246,7 +247,7 @@ class ApRESBurst(object):
         try:
             self.data = np.reshape(self.data, self.data_shape, order=self.DEFAULTS['data_dim_order'])
         except ValueError as e:
-            expected_len = self.data_shape[0] * self.data_shape[1]
+            expected_len = math.prod(self.data_shape)
 
             if self.data.size < expected_len:
                 warnings.warn("Data array read from file doesn't match data_shape as read from the file header: {}. It is shorter than expected. Cannot continue.")
@@ -276,7 +277,7 @@ class ApRESBurst(object):
         if self.data_start == -1:
             self.read_header()
 
-        count = self.data_shape[0] * self.data_shape[1]
+        count = math.prod(self.data_shape)
         self.fp.seek(self.data_start, 0)
         self.data = np.fromfile(self.fp, dtype=np.dtype(self.data_type), count=count)
         self.reshape_data()

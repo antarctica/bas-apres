@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import Mock, patch
 import os
 import warnings
+import math
 import tempfile
 import hashlib
  
@@ -223,12 +224,9 @@ class TestApRESBurst(unittest.TestCase):
         # section, will mess up reading the data.  The data cannot be reshaped,
         # because data_shape is an empty tuple.  We catch the ValueError thrown
         # when reshaping, because we check to see if the data are shorter or
-        # longer than expected.  As the data_shape tuple is empty though, we
-        # will cause an IndexError
+        # longer than expected
         f.data_start = 7
-
-        with self.assertRaises(IndexError):
-            f.read_data()
+        f.read_data()
 
         self.assertEqual(0, len(f.data_shape))
         self.assertEqual(0, len(f.header))
@@ -241,7 +239,7 @@ class TestApRESBurst(unittest.TestCase):
         f = ApRESBurst(fp)
         f.read_data()
         self.assertEqual(f.data_shape, f.data.shape)
-        self.assertEqual(f.data_shape[0] * f.data_shape[1], f.data.size)
+        self.assertEqual(math.prod(f.data_shape), f.data.size)
         fp.close()
 
     def test_read_data_fails_to_shape_shorter_data(self):
@@ -289,7 +287,7 @@ class TestApRESBurst(unittest.TestCase):
             warnings.simplefilter("ignore")
             f.reshape_data()
             self.assertEqual(f.data_shape, f.data.shape)
-            self.assertEqual(f.data_shape[0] * f.data_shape[1], f.data.size)
+            self.assertEqual(math.prod(f.data_shape), f.data.size)
 
         fp.close()
 

@@ -12,9 +12,11 @@ def main():
             header = burst.header
             print(f'header: header_start = {burst.header_start}')
             print(f'header: data_start = {burst.data_start}')
+            print(f'header: data_dim_keys = {burst.data_dim_keys}')
             print(f'header: data_shape = {burst.data_shape}')
             print(f'header: dict = ')
             print(header)
+
 
             data = burst.data
             print(f'data: len(data) = {len(data)}')

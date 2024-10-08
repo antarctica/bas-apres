@@ -64,6 +64,7 @@ class ApRESBurst(object):
         self.data_start = -1
         self.header_lines = []
         self.header = {}
+        self.data_dim_keys = []
         self.data_shape = ()
         self.data_type = '<u2'
         self.data = None
@@ -157,10 +158,12 @@ class ApRESBurst(object):
         :rtype: tuple
         """
 
+        self.data_dim_keys = []
         self.data_shape = ()
         data_shape = []
 
         for key in self.DEFAULTS['data_dim_keys']:
+            self.data_dim_keys.append(key)
             data_shape.append(int(self.header[key]))
 
         if int(self.header[self.DEFAULTS['data_type_key']]) > 0:
@@ -545,10 +548,10 @@ class ApRESFile(object):
         for key in burst.header:
             nco.setncattr(key, burst.header[key])
 
-        for j, key in enumerate(burst.DEFAULTS['data_dim_keys']):
-            nco.createDimension(key, burst.data_shape[j])
+        for key, n in zip(burst.data_dim_keys, burst.data_shape):
+            nco.createDimension(key, n)
 
-        data = nco.createVariable(self.DEFAULTS['netcdf_var_name'], burst.data_type, tuple(burst.DEFAULTS['data_dim_keys']))
+        data = nco.createVariable(self.DEFAULTS['netcdf_var_name'], burst.data_type, tuple(burst.data_dim_keys))
         data.setncatts(self.DEFAULTS['netcdf_attrs'])
         data[:] = burst.data
 

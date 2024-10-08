@@ -89,6 +89,13 @@ class TestApRESBurst(unittest.TestCase):
         #self.assertEqual(':', f.DEFAULTS['header_line_delim'])
         #self.assertEqual(['SubBursts in burst', 'Samples'], f.DEFAULTS['data_dim_keys'])
 
+    def test_define_data_dim_keys_ok(self):
+        f = ApRESBurst()
+        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0']
+        f.store_header()
+        f.define_data_shape()
+        self.assertEqual(['NSubBursts','N_ADC_SAMPLES'], f.data_dim_keys)
+
     def test_define_data_shape_ok(self):
         f = ApRESBurst()
         f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0']

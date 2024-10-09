@@ -11,7 +11,6 @@ import re
 import os
 import sys
 import warnings
-import math
 
 import numpy as np
 from netCDF4 import Dataset
@@ -34,6 +33,7 @@ class ApRESBurst(object):
         'data_type_key': 'Average',
         'data_types': ['<u2','<f4','<u4'],
         'data_dim_keys': ['NSubBursts', 'N_ADC_SAMPLES'],
+        'data_dim_optional_keys': ['nAttenuators'],
         'data_dim_order': 'C'
     }
 
@@ -146,7 +146,7 @@ class ApRESBurst(object):
 
         return self.header
 
-    def define_data_shape(self):
+    def define_data_shape(self, flatten='unity'):
         """
         Parse the data dimensions from the header to define the data shape
 
@@ -154,6 +154,22 @@ class ApRESBurst(object):
         subbursts have been aggregated to a single value, so we rewrite that
         dimension as 1
 
+        In special cases, the data may be stored in additional dimensions.
+        We detect and store these optional dimension metadata, to enable
+        the data to be reshaped accordingly.  These optional dimensions are
+        used according to the value of the `flatten` kwarg:
+
+        * always: An optional dimension is always flattened, so that
+          data_shape[1] is the product of itself and any optional dimensions
+        * unity: An optional dimension with length == 1 is flattened into
+          data_shape[1], otherwise if its length > 1, then it is stored
+          as an additional dimension
+        * never: An optional dimension is never flattened and is stored as
+          an additional dimension
+
+        :param flatten: Controls flattening optional dimensions.  Must be one
+        of ['always','unity','never']
+        :type flatten: str
         :returns: The data shape
         :rtype: tuple
         """
@@ -162,12 +178,33 @@ class ApRESBurst(object):
         self.data_shape = ()
         data_shape = []
 
+        if flatten not in ['always','unity','never']:
+            raise ValueError(f"Unsupported flatten option {flatten}")
+
         for key in self.DEFAULTS['data_dim_keys']:
             self.data_dim_keys.append(key)
             data_shape.append(int(self.header[key]))
 
         if int(self.header[self.DEFAULTS['data_type_key']]) > 0:
             data_shape[0] = 1
+
+        for key in self.DEFAULTS['data_dim_optional_keys']:
+            try:
+                m = int(self.header[key])
+
+                if flatten.lower() == 'always':
+                    data_shape[1] *= m
+                elif flatten.lower() == 'unity':
+                    if m > 1:
+                        self.data_dim_keys.append(key)
+                        data_shape.append(m)
+                elif flatten.lower() == 'never':
+                    self.data_dim_keys.append(key)
+                    data_shape.append(m)
+            except KeyError:
+                pass
+            except ValueError:
+                warnings.warn(f"File header optional dimension key {key} has an invalid value so cannot be used as a dimension.")
 
         self.data_shape = tuple(data_shape)
 
@@ -250,7 +287,7 @@ class ApRESBurst(object):
         try:
             self.data = np.reshape(self.data, self.data_shape, order=self.DEFAULTS['data_dim_order'])
         except ValueError as e:
-            expected_len = math.prod(self.data_shape)
+            expected_len = int(np.prod(self.data_shape))
 
             if self.data.size < expected_len:
                 warnings.warn("Data array read from file doesn't match data_shape as read from the file header: {}. It is shorter than expected. Cannot continue.")
@@ -280,7 +317,7 @@ class ApRESBurst(object):
         if self.data_start == -1:
             self.read_header()
 
-        count = math.prod(self.data_shape)
+        count = int(np.prod(self.data_shape))
         self.fp.seek(self.data_start, 0)
         self.data = np.fromfile(self.fp, dtype=np.dtype(self.data_type), count=count)
         self.reshape_data()

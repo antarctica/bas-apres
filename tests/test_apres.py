@@ -2,7 +2,6 @@ import unittest
 from unittest.mock import Mock, patch
 import os
 import warnings
-import math
 import tempfile
 import hashlib
  
@@ -135,6 +134,100 @@ class TestApRESBurst(unittest.TestCase):
         with self.assertRaises(KeyError):
             f.define_data_shape()
 
+    def test_define_data_shape_optional_dim_key_missing(self):
+        f = ApRESBurst()
+        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0']
+        f.store_header()
+        f.define_data_shape()
+
+    def test_define_data_shape_optional_dim_key_missing_value(self):
+        f = ApRESBurst()
+        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0','nAttenuators=']
+        f.store_header()
+
+        with self.assertWarns(UserWarning):
+            f.define_data_shape()
+
+    def test_define_data_shape_optional_dim_key_non_integer_value(self):
+        f = ApRESBurst()
+        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0','nAttenuators=0.5']
+        f.store_header()
+
+        with self.assertWarns(UserWarning):
+            f.define_data_shape()
+
+    def test_define_data_shape_flatten_default_eq_1(self):
+        f = ApRESBurst()
+        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0','nAttenuators=1']
+        f.store_header()
+        f.define_data_shape()
+        self.assertEqual(['NSubBursts','N_ADC_SAMPLES'], f.data_dim_keys)
+        self.assertEqual((100,40001), f.data_shape)
+
+    def test_define_data_shape_flatten_default_gt_1(self):
+        f = ApRESBurst()
+        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0','nAttenuators=2']
+        f.store_header()
+        f.define_data_shape()
+        self.assertEqual(['NSubBursts','N_ADC_SAMPLES','nAttenuators'], f.data_dim_keys)
+        self.assertEqual((100,40001,2), f.data_shape)
+
+    def test_define_data_shape_flatten_unity_eq_1(self):
+        f = ApRESBurst()
+        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0','nAttenuators=1']
+        f.store_header()
+        f.define_data_shape(flatten='unity')
+        self.assertEqual(['NSubBursts','N_ADC_SAMPLES'], f.data_dim_keys)
+        self.assertEqual((100,40001), f.data_shape)
+
+    def test_define_data_shape_flatten_unity_gt_1(self):
+        f = ApRESBurst()
+        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0','nAttenuators=2']
+        f.store_header()
+        f.define_data_shape(flatten='unity')
+        self.assertEqual(['NSubBursts','N_ADC_SAMPLES','nAttenuators'], f.data_dim_keys)
+        self.assertEqual((100,40001,2), f.data_shape)
+
+    def test_define_data_shape_flatten_always_eq_1(self):
+        f = ApRESBurst()
+        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0','nAttenuators=1']
+        f.store_header()
+        f.define_data_shape(flatten='always')
+        self.assertEqual(['NSubBursts','N_ADC_SAMPLES'], f.data_dim_keys)
+        self.assertEqual((100,40001), f.data_shape)
+
+    def test_define_data_shape_flatten_always_gt_1(self):
+        f = ApRESBurst()
+        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0','nAttenuators=2']
+        f.store_header()
+        f.define_data_shape(flatten='always')
+        self.assertEqual(['NSubBursts','N_ADC_SAMPLES'], f.data_dim_keys)
+        self.assertEqual((100,80002), f.data_shape)
+
+    def test_define_data_shape_flatten_never_eq_1(self):
+        f = ApRESBurst()
+        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0','nAttenuators=1']
+        f.store_header()
+        f.define_data_shape(flatten='never')
+        self.assertEqual(['NSubBursts','N_ADC_SAMPLES','nAttenuators'], f.data_dim_keys)
+        self.assertEqual((100,40001,1), f.data_shape)
+
+    def test_define_data_shape_flatten_never_gt_1(self):
+        f = ApRESBurst()
+        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0','nAttenuators=2']
+        f.store_header()
+        f.define_data_shape(flatten='never')
+        self.assertEqual(['NSubBursts','N_ADC_SAMPLES','nAttenuators'], f.data_dim_keys)
+        self.assertEqual((100,40001,2), f.data_shape)
+
+    def test_define_data_shape_flatten_invalid_value(self):
+        f = ApRESBurst()
+        f.header_lines = ['NSubBursts=100','N_ADC_SAMPLES=40001','Average=0','nAttenuators=1']
+        f.store_header()
+
+        with self.assertRaises(ValueError):
+            f.define_data_shape(flatten='unsupported')
+
     def test_define_data_type_ok(self):
         f = ApRESBurst()
         f.header_lines = ['Average=0']
@@ -246,7 +339,7 @@ class TestApRESBurst(unittest.TestCase):
         f = ApRESBurst(fp)
         f.read_data()
         self.assertEqual(f.data_shape, f.data.shape)
-        self.assertEqual(math.prod(f.data_shape), f.data.size)
+        self.assertEqual(int(np.prod(f.data_shape)), f.data.size)
         fp.close()
 
     def test_read_data_fails_to_shape_shorter_data(self):
@@ -294,7 +387,7 @@ class TestApRESBurst(unittest.TestCase):
             warnings.simplefilter("ignore")
             f.reshape_data()
             self.assertEqual(f.data_shape, f.data.shape)
-            self.assertEqual(math.prod(f.data_shape), f.data.size)
+            self.assertEqual(int(np.prod(f.data_shape)), f.data.size)
 
         fp.close()
 

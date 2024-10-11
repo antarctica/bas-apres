@@ -177,9 +177,10 @@ class ApRESBurst(object):
         self.data_dim_keys = []
         self.data_shape = ()
         data_shape = []
+        opts_flatten = ['always','unity','never']
 
-        if flatten not in ['always','unity','never']:
-            raise ValueError(f"Unsupported flatten option {flatten}")
+        if flatten.lower() not in opts_flatten:
+            raise ValueError(f"Unsupported flatten option {flatten}, must be one of {opts_flatten}")
 
         for key in self.DEFAULTS['data_dim_keys']:
             self.data_dim_keys.append(key)

@@ -7,48 +7,6 @@ from netCDF4 import Dataset
 
 from apres import ApRESFile
 
-def construct_radargram(plt, mat, xaxis, yaxis, xlim=None, ylim=None, xlabel='NSubBursts', ylabel='N_ADC_SAMPLES', contrast=1.0, cmap='gray', aspect='auto'):
-    """
-    Plot the given data as a radargram
-
-    :param plt: The plot object
-    :type plt: matplotlib.pyplot
-    :param mat: The data with each sub burst (trace) as a column of a matrix
-    :type mat: numpy.matrix
-    :param xaxis: The x-axis values (of length NSubBursts)
-    :type xaxis: numpy.ndarray
-    :param yaxis: The y-axis values (of length N_ADC_SAMPLES)
-    :type yaxis: numpy.ndarray
-    :param xlim: The x-axis limits (defaults to [min(xaxis), max(xaxis)])
-    :type xlim: list
-    :param ylim: The y-axis limits (defaults to [max(yaxis), min(yaxis)])
-    :type ylim: list
-    :param xlabel: The x-axis label
-    :type xlabel: str
-    :param ylabel: The y-axis label
-    :type ylabel: str
-    :param contrast: The plot contrast factor
-    :type contrast: float
-    :param cmap: The plot colour map name (can be any supported by matplotlib)
-    :type cmap: str
-    :param aspect: The plot aspect ratio
-    :type aspect: str
-    """
-
-    dx = xaxis[1] - xaxis[0]
-    dy = yaxis[1] - yaxis[0]
-    xlim = xlim or [min(xaxis), max(xaxis)]
-    ylim = ylim or [max(yaxis), min(yaxis)]
-    extent = [min(xaxis) - dx/2.0, max(xaxis) + dx/2.0, max(yaxis) + dy/2.0, min(yaxis) - dy/2.0]
-    std_contrast = np.nanmax(np.abs(mat)[:])
-
-    plt.imshow(mat, cmap=cmap, extent=extent, aspect=aspect, vmin=-std_contrast/contrast, vmax=std_contrast/contrast)
-
-    plt.gca().set_xlabel(xlabel)
-    plt.gca().set_ylabel(ylabel)
-    plt.xlim(xlim)
-    plt.ylim(ylim)
-
 def parse_cmdln():
     """
     Parse the command line options and arguments
@@ -101,7 +59,66 @@ python3 -m apres.plot_apres -t -g 3 2 filename.dat
 
     return args
 
-def plot_data(args, data, title):
+def plot_radargram(mat, xaxis, yaxis, xlim=None, ylim=None, contrast=1.0, cmap='gray', aspect='auto'):
+    """
+    Plot the given data as a radargram
+
+    :param mat: The data with each sub burst (trace) as a column of a matrix
+    :type mat: numpy.matrix
+    :param xaxis: The x-axis values (of length NSubBursts)
+    :type xaxis: numpy.ndarray
+    :param yaxis: The y-axis values (of length N_ADC_SAMPLES)
+    :type yaxis: numpy.ndarray
+    :param xlim: The x-axis limits (defaults to [min(xaxis), max(xaxis)])
+    :type xlim: list
+    :param ylim: The y-axis limits (defaults to [max(yaxis), min(yaxis)])
+    :type ylim: list
+    :param xlabel: The x-axis label
+    :type xlabel: str
+    :param ylabel: The y-axis label
+    :type ylabel: str
+    :param contrast: The plot contrast factor
+    :type contrast: float
+    :param cmap: The plot colour map name (can be any supported by matplotlib)
+    :type cmap: str
+    :param aspect: The plot aspect ratio
+    :type aspect: str
+    """
+
+    dx = xaxis[1] - xaxis[0]
+    dy = yaxis[1] - yaxis[0]
+    xlim = xlim or [min(xaxis), max(xaxis)]
+    ylim = ylim or [max(yaxis), min(yaxis)]
+    extent = [min(xaxis) - dx/2.0, max(xaxis) + dx/2.0, max(yaxis) + dy/2.0, min(yaxis) - dy/2.0]
+    std_contrast = np.nanmax(np.abs(mat)[:])
+
+    plt.imshow(mat, cmap=cmap, extent=extent, aspect=aspect, vmin=-std_contrast/contrast, vmax=std_contrast/contrast)
+
+    plt.xlim(xlim)
+    plt.ylim(ylim)
+
+def construct_radargram_data(data, ntraces, npoints):
+    """
+    Construct the data structure to plot a radargram
+
+    :param data: The data for the radargram
+    :type data: numpy.array
+    :param ntraces: The number of traces in the radargram
+    :type ntraces: int
+    :param npoints: The number of points in each trace
+    :type npoints: int
+    :returns: The radargram data as a matrix
+    :rtype: numpy.matrix
+    """
+
+    cols = np.zeros((npoints, ntraces))
+
+    for i, trace in enumerate(data):
+        cols[:,i] = trace
+
+    return np.asmatrix(cols)
+
+def plot_data(args, data, title, labels=[]):
     """
     Plot the given data
 
@@ -111,9 +128,11 @@ def plot_data(args, data, title):
     :type data: numpy.array
     :param title: The title for the plot
     :type title: str
+    :param labels: The legend labels for a multi-array plot
+    :type labels: list
     """
 
-    if args.type == 'traces':
+    if args.type == 'traces':     # Plot individual traces
         (nrows, ncols) = args.grid
         fig = plt.figure()
 
@@ -121,22 +140,47 @@ def plot_data(args, data, title):
             ax = fig.add_subplot(nrows, ncols, i + 1)
             ax.plot(data[i])
 
+            # Data contains multiple curves so label accordingly
+            if labels:
+                ax.legend(labels)
+
         fig.supxlabel('Samples')
         fig.supylabel('Amplitude')
-    else:
+    else:                         # Plot the vertical traces as a radargram
+        ndims = len(data.shape)
         ntraces = int(data.shape[0])
         npoints = int(data.shape[1])
         xaxis = np.linspace(1.0, float(ntraces), int(ntraces))
         yaxis = np.linspace(0.0, float(npoints), int(npoints))
-        cols = np.zeros((npoints, ntraces))
+        fig = plt.figure()
 
-        for i, trace in enumerate(data):
-            cols[:,i] = trace
+        if ndims > 2:
+            for i in range(data.shape[2]):
+                ax = fig.add_subplot(data.shape[2], 1, i + 1)
 
-        mat = np.asmatrix(cols)
+                # Just use one set of x-axis tic labels for all stacked plots
+                if i == 0:
+                    ax0 = ax
+                else:
+                    ax.sharex(ax0)
 
-        # Plot the vertical traces as a radargram
-        construct_radargram(plt, mat, xaxis, yaxis, contrast=args.contrast, cmap=args.cmap)
+                if i != data.shape[2] - 1:
+                    ax.tick_params(labelbottom=False)
+
+                data_slice = data[:,:,i]
+                mat = construct_radargram_data(data_slice, ntraces, npoints)
+                plot_radargram(mat, xaxis, yaxis, contrast=args.contrast, cmap=args.cmap)
+
+                # Add text box to act as a legend to identify each plot
+                if labels:
+                    ax.text(ntraces-(ntraces/100*2), 0+(npoints/100*10), labels[i], ha='right', va='top', fontsize=8, bbox={'facecolor': 'white', 'edgecolor': 'gray', 'pad': 2})
+        else:
+            ax = fig.add_subplot(1, 1, 1)
+            mat = construct_radargram_data(data, ntraces, npoints)
+            plot_radargram(mat, xaxis, yaxis, contrast=args.contrast, cmap=args.cmap)
+
+        fig.supxlabel('NSubBursts')
+        fig.supylabel('N_ADC_SAMPLES')
 
     plt.suptitle(title)
     plt.show()
@@ -155,8 +199,15 @@ def plot_burst(args, burst):
     if int(burst.header['Average']) > 0:
         args.type = 'traces'
 
+    # For > 2D data, we need to provide legend labels
+    labels = []
+    ndims = len(burst.data_shape)
+
+    if ndims > 2:
+        labels = [f"{burst.data_dim_keys[2]} {i}" for i in range(ndims)]
+
     title = f'{os.path.basename(args.filename)}: {burst.header["Time stamp"]}'
-    plot_data(args, burst.data, title)
+    plot_data(args, burst.data, title, labels=labels)
 
 def main():
     args = parse_cmdln()

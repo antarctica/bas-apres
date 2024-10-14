@@ -29,7 +29,10 @@ This script converts an ApRES .dat file to netCDF4.  The default output netCDF f
 python3 -m apres.apres_to_nc filename.dat [outfile.nc]
 ```
 
-The conversion is a straightforward mapping, in that each burst becomes a netCDF4 group, where the header lines become group attributes, and the data are stored as a `NSubBursts` x `N_ADC_SAMPLES` 2D data array.
+The conversion is a straightforward mapping, in that each burst becomes a netCDF4 group, where the header lines become group attributes, and the data are stored as the group data.  How the data are stored depends on the number of attenuators used when acquiring the data:
+
+* Single-attenuator configuration: The data are stored as a `NSubBursts` x `N_ADC_SAMPLES` 2D data array.
+* Multi-attenuator configuration: The data are stored as a `NSubBursts` x `N_ADC_SAMPLES` x `nAttenuators` 3D data array.
 
 ### nc_to_apres.py
 
@@ -43,7 +46,7 @@ The conversion is a straightforward reversal of the original conversion.  For th
 
 ### plot_apres.py
 
-This script will plot the `N_ADC_SAMPLES` vs `NSubBursts` as a radargram, for each burst in the file (or group for converted netCDF files).  If the `Average` header item > 0 (and so each subburst has been aggregated), then the script will instead plot the first subburst as a single trace.  The file can be either an ApRES .dat file, or a converted netCDF file.
+This script will plot the `N_ADC_SAMPLES` vs `NSubBursts` as a radargram, for each burst in the file (or group for converted netCDF files).  If the `Average` header item > 0 (and so each subburst has been aggregated), then the script will instead plot the first subburst as a single trace.  If the `nAttenuators` header item > 1, then each attenuator's data are plotted separately.  The file can be either an ApRES .dat file, or a converted netCDF file.
 
 ```bash
 python3 -m apres.plot_apres [-h] [-r | -t] [-g GRID GRID] [-c CONTRAST] [-m CMAP]
@@ -93,7 +96,7 @@ python3 -m apres.plot_apres -t -g 3 2 filename.dat
 
 ### read_apres.py
 
-This script will read the given ApRES .dat file, and for each burst, print the results of parsing the header, such as the dimensions of the data array, and the parsed header dictionary.  It will also *head* the data section (by default the first 10 samples of the first 10 subbursts), to give an initial simple look at the data.
+This script will read the given ApRES .dat file, and for each burst, print the results of parsing the header, such as the dimensions of the data array, and the parsed header dictionary.  It will also *head* the data section (by default the first 10 samples of the first 10 subbursts), to give an initial simple look at the data.  If the data were acquired using multiple attenuators, then the number of samples shown will be multiplied by the number of attenuators.
 
 The script's primary purpose is as a simple example of how to use the `ApRESFile` class to read an ApRES .dat file.
 

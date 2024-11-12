@@ -4,13 +4,13 @@
 # Author:  Paul M. Breen
 # Date:    2018-09-24
 ###############################################################################
-
 __version__ = '0.2.0'
 
 import re
 import os
 import sys
 import warnings
+import gcsfs
 
 import numpy as np
 from netCDF4 import Dataset
@@ -70,6 +70,11 @@ class ApRESBurst(object):
         self.data = None
 
         self.fp = fp
+        
+        if isinstance(self.fp, gcsfs.core.GCSFile):
+            self.remote = True
+        else:
+            self.remote = False
 
         if self.fp:
             self.header_start = self.fp.tell()
@@ -93,17 +98,24 @@ class ApRESBurst(object):
         self.data_start = -1
         self.header_lines = []
 
-        self.fp.seek(self.header_start, 0)
-        line = self.fp.readline()
+        if self.remote:
+            # for remote loads the initial open is in binary mode, so to read the header we need to open the file again in text mode
+            filesystem = gcsfs.GCSFileSystem()
+            self.fp_for_header = filesystem.open(self.fp.full_name, mode = 'r', encoding='latin-1')
+        else:
+            self.fp_for_header = self.fp
+
+        self.fp_for_header.seek(self.header_start, 0)
+        line = self.fp_for_header.readline()
         self.header_lines.append(line.rstrip())
 
         while(line):
             # The data section follows the end of header marker
             if re.match(self.DEFAULTS['end_of_header_re'], line):
-                self.data_start = self.fp.tell()
+                self.data_start = self.fp_for_header.tell()
                 break
 
-            line = self.fp.readline()
+            line = self.fp_for_header.readline()
             self.header_lines.append(line.rstrip())
 
         return self.header_lines
@@ -320,7 +332,13 @@ class ApRESBurst(object):
 
         count = int(np.prod(self.data_shape))
         self.fp.seek(self.data_start, 0)
-        self.data = np.fromfile(self.fp, dtype=np.dtype(self.data_type), count=count)
+
+        if self.remote:
+            inbuff = self.fp.read(count * 2)
+            self.data = np.frombuffer(inbuff, dtype=np.uint16)
+        else:
+            self.data = np.fromfile(self.fp, dtype=np.dtype(self.data_type), count=count)
+        
         self.reshape_data()
 
         return self.data
@@ -473,9 +491,16 @@ class ApRESFile(object):
         if path:
             self.path = path
 
-        self.fp = open(self.path, mode, encoding=self.DEFAULTS['file_encoding'])
-        self.file_size = os.fstat(self.fp.fileno()).st_size
-
+        if "gs://" in self.path:
+            self.remote = True
+            filesystem = gcsfs.GCSFileSystem()
+            self.fp = filesystem.open(self.path, mode = 'rb')
+            self.file_size = filesystem.info(self.path)['size']
+        else:
+            self.remote = False
+            self.fp = open(self.path, mode, encoding=self.DEFAULTS['file_encoding'])
+            self.file_size = os.fstat(self.fp.fileno()).st_size
+    
         return self
 
     def close(self):

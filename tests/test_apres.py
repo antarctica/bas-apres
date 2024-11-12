@@ -670,6 +670,20 @@ class TestApRESFile(unittest.TestCase):
             assert in_nbursts == 5
             assert out_nbursts == 3
 
+    def test_remote_load(self):
+        remote_dat_filename = 'gs://ldeo-glaciology/apres/thwaites/continuous/ApRES_LTG/SD1/DIR2023-01-25-0435/DATA2023-02-16-0437.DAT'
+
+        with ApRESFile(remote_dat_filename) as f_remote: 
+            f_remote.read()
+
+        local_dat_filename = self.base + '/DATA2023-02-16-0437.DAT'
+        with ApRESFile(local_dat_filename) as f_local: 
+            f_local.read()
+
+        assert all(\
+            (f_local.bursts[n].data == f_remote.bursts[n].data).all() \
+            for n in range(len(f_remote.bursts)) \
+            )
 class TestConversion(unittest.TestCase):
 
     base = os.path.dirname(__file__)
@@ -713,4 +727,7 @@ class TestConversion(unittest.TestCase):
         in_file = self.base + '/short-test-data-v1.dat'
         hash1, hash2 = self.compare_original_with_recovered(in_file)
         assert hash1 != hash2
+
+        
+    
 

@@ -10,7 +10,6 @@ import re
 import os
 import sys
 import warnings
-import gcsfs
 
 import numpy as np
 from netCDF4 import Dataset
@@ -70,13 +69,11 @@ class ApRESBurst(object):
         self.data = None
 
         self.fp = fp
-        
-        if isinstance(self.fp, gcsfs.core.GCSFile):
-            self.remote = True
-        else:
-            self.remote = False
 
         if self.fp:
+            if not hasattr(self.fp, 'remote'): # assume that if self.fp.remote hasnt been set then it is a local file
+                self.fp.remote = False
+
             self.header_start = self.fp.tell()
 
     def reset_init_defaults(self):
@@ -98,13 +95,13 @@ class ApRESBurst(object):
         self.data_start = -1
         self.header_lines = []
 
-        if self.remote:
+        if self.fp.remote:
             # for remote loads the initial open is in binary mode, so to read the header we need to open the file again in text mode
-            filesystem = gcsfs.GCSFileSystem()
-            self.fp_for_header = filesystem.open(self.fp.full_name, mode = 'r', encoding='latin-1')
+            filesystem = fsspec.filesystem(self.fp.protocol, anon=True)
+            self.fp_for_header = filesystem.open(self.fp.full_name, mode = 'r', encoding='latin-1', anon=True)
         else:
             self.fp_for_header = self.fp
-
+            
         self.fp_for_header.seek(self.header_start, 0)
         line = self.fp_for_header.readline()
         self.header_lines.append(line.rstrip())
@@ -333,7 +330,7 @@ class ApRESBurst(object):
         count = int(np.prod(self.data_shape))
         self.fp.seek(self.data_start, 0)
 
-        if self.remote:
+        if self.fp.remote:
             inbuff = self.fp.read(count * 2)
             self.data = np.frombuffer(inbuff, dtype=np.uint16)
         else:
@@ -491,16 +488,22 @@ class ApRESFile(object):
         if path:
             self.path = path
 
-        if "gs://" in self.path:
-            self.remote = True
-            filesystem = gcsfs.GCSFileSystem()
-            self.fp = filesystem.open(self.path, mode = 'rb')
+        if "://" in self.path:
+            try:
+                global fsspec
+                import fsspec
+            except ImportError:
+                raise ImportError("To open files on remote storage the 'remote' optional dependency must be installed: pip install bas-apres[remote]")
+            protocol = self.path.split('://')[0]
+            filesystem = fsspec.filesystem(protocol, anon=True)
+            self.fp = filesystem.open(self.path, mode='rb', anon=True)
             self.file_size = filesystem.info(self.path)['size']
+            self.fp.remote = True
+            self.fp.protocol = protocol
         else:
-            self.remote = False
             self.fp = open(self.path, mode, encoding=self.DEFAULTS['file_encoding'])
             self.file_size = os.fstat(self.fp.fileno()).st_size
-    
+            self.fp.remote = False
         return self
 
     def close(self):

@@ -671,19 +671,29 @@ class TestApRESFile(unittest.TestCase):
             assert out_nbursts == 3
 
     def test_remote_load(self):
-        remote_dat_filename = 'gs://ldeo-glaciology/apres/thwaites/continuous/ApRES_LTG/SD1/DIR2023-01-25-0435/DATA2023-02-16-0437.DAT'
+        remote_dat_gcs = 'gs://ldeo-glaciology/apres/thwaites/continuous/ApRES_LTG/SD1/DIR2023-01-25-0435/DATA2023-02-16-0437.DAT'
+        remote_dat_s3 = 's3://ldeo-glaciology/apres/DATA2023-02-16-0437.DAT'
+        local_dat = self.base + '/DATA2023-02-16-0437.DAT'
 
-        with ApRESFile(remote_dat_filename) as f_remote: 
-            f_remote.read()
+        with ApRESFile(remote_dat_gcs) as f_remote_gcs: 
+            f_remote_gcs.read()      
 
-        local_dat_filename = self.base + '/DATA2023-02-16-0437.DAT'
-        with ApRESFile(local_dat_filename) as f_local: 
-            f_local.read()
+        with ApRESFile(remote_dat_s3) as f_remote_s3: 
+            f_remote_s3.read()   
+
+        with ApRESFile(local_dat) as f_local: 
+            f_local.read()   
 
         assert all(\
-            (f_local.bursts[n].data == f_remote.bursts[n].data).all() \
-            for n in range(len(f_remote.bursts)) \
+            (f_local.bursts[n].data == f_remote_gcs.bursts[n].data).all() \
+            for n in range(len(f_local.bursts)) \
             )
+        
+        assert all(\
+            (f_local.bursts[n].data == f_remote_s3.bursts[n].data).all() \
+            for n in range(len(f_local.bursts)) \
+            )
+       
 class TestConversion(unittest.TestCase):
 
     base = os.path.dirname(__file__)

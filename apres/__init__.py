@@ -198,10 +198,10 @@ class ApRESBurst(object):
                 elif flatten.lower() == 'unity':
                     if m > 1:
                         self.data_dim_keys.append(key)
-                        data_shape.append(m)
+                        data_shape.insert(1, m)
                 elif flatten.lower() == 'never':
                     self.data_dim_keys.append(key)
-                    data_shape.append(m)
+                    data_shape.insert(1, m)
             except KeyError:
                 pass
             except ValueError:

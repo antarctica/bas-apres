@@ -170,7 +170,7 @@ class TestApRESBurst(unittest.TestCase):
         f.store_header()
         f.define_data_shape()
         self.assertEqual(['NSubBursts','N_ADC_SAMPLES','nAttenuators'], f.data_dim_keys)
-        self.assertEqual((100,40001,2), f.data_shape)
+        self.assertEqual((100,2,40001), f.data_shape)
 
     def test_define_data_shape_flatten_unity_eq_1(self):
         f = ApRESBurst()
@@ -186,7 +186,7 @@ class TestApRESBurst(unittest.TestCase):
         f.store_header()
         f.define_data_shape(flatten='unity')
         self.assertEqual(['NSubBursts','N_ADC_SAMPLES','nAttenuators'], f.data_dim_keys)
-        self.assertEqual((100,40001,2), f.data_shape)
+        self.assertEqual((100,2,40001), f.data_shape)
 
     def test_define_data_shape_flatten_always_eq_1(self):
         f = ApRESBurst()
@@ -210,7 +210,7 @@ class TestApRESBurst(unittest.TestCase):
         f.store_header()
         f.define_data_shape(flatten='never')
         self.assertEqual(['NSubBursts','N_ADC_SAMPLES','nAttenuators'], f.data_dim_keys)
-        self.assertEqual((100,40001,1), f.data_shape)
+        self.assertEqual((100,1,40001), f.data_shape)
 
     def test_define_data_shape_flatten_never_gt_1(self):
         f = ApRESBurst()
@@ -218,7 +218,7 @@ class TestApRESBurst(unittest.TestCase):
         f.store_header()
         f.define_data_shape(flatten='never')
         self.assertEqual(['NSubBursts','N_ADC_SAMPLES','nAttenuators'], f.data_dim_keys)
-        self.assertEqual((100,40001,2), f.data_shape)
+        self.assertEqual((100,2,40001), f.data_shape)
 
     def test_define_data_shape_flatten_invalid_value(self):
         f = ApRESBurst()

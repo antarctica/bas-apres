@@ -287,6 +287,37 @@ class TestApRESBurst(unittest.TestCase):
         self.assertEqual('12.2058', f.header['BatteryVoltage'])
         fp.close()
 
+    def test_read_header_lines_decode_error(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        fp = open(in_file)
+        f = ApRESBurst(fp)
+
+        with self.assertRaises(UnicodeDecodeError):
+            f.read_header_lines()
+
+        fp.close()
+
+    def test_read_header_lines_decode_text(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        fp = open(in_file, mode='r', encoding=ApRESFile.DEFAULTS['file_encoding'])
+        f = ApRESBurst(fp)
+        f.read_header_lines()
+        assert hasattr(f.fp, 'encoding')
+        assert f.fp.encoding == ApRESFile.DEFAULTS['file_encoding']
+        fp.close()
+
+    def test_read_header_lines_decode_binary(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        fp = open(in_file, mode='rb')
+        f = ApRESBurst(fp)
+        f.read_header_lines()
+        assert hasattr(f.fp, 'encoding')
+        assert f.fp.encoding == ApRESFile.DEFAULTS['file_encoding']
+        fp.close()
+
     def test_read_data_ok(self):
         in_file = self.base + '/short-test-data.dat'
 
@@ -451,7 +482,7 @@ class TestApRESBurst(unittest.TestCase):
         fin = ApRESBurst(fp)
 
         # We mock the call to write() to avoid writing an output file
-        fout = Mock(write=Mock())
+        fout = Mock(write=Mock(), mode='w')
 
         fin.write_header(fout)
         fout.write.assert_any_call('NSubBursts=1\r\n')
@@ -463,7 +494,7 @@ class TestApRESBurst(unittest.TestCase):
         fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
         fin = ApRESBurst(fp)
 
-        fout = Mock(write=Mock())
+        fout = Mock(write=Mock(), mode='w')
 
         self.assertEqual(-1, fin.data_start)
         self.assertEqual(0, len(fin.header))
@@ -472,13 +503,26 @@ class TestApRESBurst(unittest.TestCase):
         self.assertNotEqual(0, len(fin.header))
         fp.close()
 
+    def test_write_header_binary_adds_encoding(self):
+        in_file = self.base + '/short-test-data.dat'
+ 
+        fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
+        fin = ApRESBurst(fp)
+
+        fout = Mock(write=Mock(), mode='wb', spec=True)
+
+        fin.write_header(fout)
+        assert hasattr(fout, 'encoding')
+        assert fout.encoding == ApRESFile.DEFAULTS['file_encoding']
+        fp.close()
+
     def test_write_header_modified_eol(self):
         in_file = self.base + '/short-test-data.dat'
 
         fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
         fin = ApRESBurst(fp)
 
-        fout = Mock(write=Mock())
+        fout = Mock(write=Mock(), mode='w')
 
         with patch.dict(fin.DEFAULTS, {'header_line_eol': '\n'}):
             fin.write_header(fout)
@@ -492,7 +536,7 @@ class TestApRESBurst(unittest.TestCase):
         fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
         fin = ApRESBurst(fp)
  
-        fout = Mock(write=Mock())
+        fout = Mock(write=Mock(), mode='w')
 
         fin.write_header(fout, samples=range(10))
         fout.write.assert_any_call('N_ADC_SAMPLES=10\r\n')
@@ -505,7 +549,7 @@ class TestApRESBurst(unittest.TestCase):
         fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
         fin = ApRESBurst(fp)
  
-        fout = Mock(write=Mock())
+        fout = Mock(write=Mock(), mode='w')
 
         with self.assertRaises(TypeError):
             # Keyword argument `samples` must be a range object
@@ -519,7 +563,7 @@ class TestApRESBurst(unittest.TestCase):
         fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
         fin = ApRESBurst(fp)
 
-        fout = Mock(write=Mock())
+        fout = Mock(write=Mock(), mode='w')
 
         fin.write_data(fout)
         self.assertEqual(fin.data.shape, fin.data_shape)
@@ -532,7 +576,7 @@ class TestApRESBurst(unittest.TestCase):
         fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
         fin = ApRESBurst(fp)
 
-        fout = Mock(write=Mock())
+        fout = Mock(write=Mock(), mode='w')
 
         self.assertEqual(-1, fin.data_start)
         self.assertEqual(0, len(fin.header))
@@ -547,7 +591,7 @@ class TestApRESBurst(unittest.TestCase):
         fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
         fin = ApRESBurst(fp)
  
-        fout = Mock(write=Mock())
+        fout = Mock(write=Mock(), mode='w')
 
         fin.write_data(fout)
         subbursts = range(fin.data_shape[0])
@@ -565,7 +609,7 @@ class TestApRESBurst(unittest.TestCase):
         fp = open(in_file, encoding=ApRESFile.DEFAULTS['file_encoding'])
         fin = ApRESBurst(fp)
  
-        fout = Mock(write=Mock())
+        fout = Mock(write=Mock(), mode='w')
 
         fin.write_data(fout, samples=samples)
         subbursts = range(fin.data_shape[0])
@@ -632,6 +676,16 @@ class TestApRESFile(unittest.TestCase):
 
         f = ApRESFile()
         f.open(in_file)
+        f.read()
+        f.close()
+
+    def test_encoding_set_in_binary_open(self):
+        in_file = self.base + '/short-test-data.dat'
+
+        f = ApRESFile(in_file)
+        f.open()
+        assert hasattr(f.fp, 'encoding')
+        assert f.fp.encoding == ApRESFile.DEFAULTS['file_encoding']
         f.read()
         f.close()
 

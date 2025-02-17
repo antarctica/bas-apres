@@ -86,10 +86,9 @@ class ApRESBurst(object):
         """
         Read the raw header lines from the file
 
-        * If self.fp was opened in binary mode, there is no encoding.  However,
-          we require the encoding to ensure that we can decode the text header
-          lines.  ApRESFile adds encoding to self.fp if opened in binary mode.
-          If encoding isn't set, we fallback to ApRESFile default encoding
+        * We require an encoding to ensure that we can decode the text header
+          lines.  ApRESFile adds encoding to self.fp.  If encoding isn't set
+          in self.fp, we fallback to ApRESFile default encoding
 
         :returns: The raw header lines
         :rtype: list
@@ -103,9 +102,7 @@ class ApRESBurst(object):
 
         self.fp.seek(self.header_start, 0)
         line = self.fp.readline()
-
-        if 'b' in self.fp.mode:
-            line = line.decode(self.fp.encoding)
+        line = line.decode(self.fp.encoding)
 
         self.header_lines.append(line.rstrip())
 
@@ -116,9 +113,7 @@ class ApRESBurst(object):
                 break
 
             line = self.fp.readline()
-
-            if 'b' in self.fp.mode:
-                line = line.decode(self.fp.encoding)
+            line = line.decode(self.fp.encoding)
 
             self.header_lines.append(line.rstrip())
 
@@ -397,9 +392,7 @@ class ApRESBurst(object):
                 line = self.format_header_line(self.DEFAULTS['data_dim_keys'][1], len(samples))
 
             line = line + eol
-
-            if 'b' in fp.mode:
-                line = line.encode(fp.encoding)
+            line = line.encode(fp.encoding)
 
             fp.write(line)
 
@@ -489,8 +482,9 @@ class ApRESFile(object):
         """
         Open the given file
 
-        * If open mode is binary we store the encoding in self.fp so that
-          the header can be correctly decoded
+        * If open mode is not binary, then we force it to be so
+        * We store the default encoding in self.fp so that the header can be
+          correctly decoded
 
         :param path: Path to the file
         :type path: str
@@ -506,16 +500,12 @@ class ApRESFile(object):
         if mode:
             self.mode = mode
 
-        if 'b' in self.mode:
-            encoding = None
-        else:
-            encoding = self.DEFAULTS['file_encoding']
+        if 'b' not in self.mode:
+            self.mode += 'b'
 
-        self.fp = open(self.path, self.mode, encoding=encoding)
+        self.fp = open(self.path, self.mode)
         self.file_size = os.fstat(self.fp.fileno()).st_size
-
-        if 'b' in self.mode:
-            self.fp.encoding = self.DEFAULTS['file_encoding']
+        self.fp.encoding = self.DEFAULTS['file_encoding']
 
         return self
 
@@ -596,17 +586,9 @@ class ApRESFile(object):
         if not bursts:
             bursts = range(len(self.bursts))
 
-        # We append each burst, so ensure file is empty if it already exists
-        with open(path, 'w') as fout:
-            pass
-
-        # The ApRES .dat file format is a mixed mode file.  The header is
-        # text, and the data section is binary
-        for burst in self.bursts[bursts.start:bursts.stop:bursts.step]:
-            with open(path, 'a') as fout:
+        with open(path, 'wb') as fout:
+            for burst in self.bursts[bursts.start:bursts.stop:bursts.step]:
                 burst.write_header(fout, subbursts=subbursts, samples=samples)
-
-            with open(path, 'ab') as fout:
                 burst.write_data(fout, subbursts=subbursts, samples=samples)
 
     def burst_to_nc_object(self, burst, nco):

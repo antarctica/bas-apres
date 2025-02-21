@@ -6,6 +6,9 @@ import numpy as np
 from netCDF4 import Dataset
 
 from apres import ApRESFile
+import apres.__main__ as m
+
+PROGNAME = 'plot_apres'
 
 def parse_cmdln():
     """
@@ -42,7 +45,7 @@ Plot the first 6 traces, in a 3x2 grid:
 python3 -m apres.plot_apres -t -g 3 2 filename.dat
 """
 
-    parser = argparse.ArgumentParser(description='plot ApRES data, either from a .dat file, or a converted netCDF file', epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(description='plot ApRES data, either from a .dat file, or a converted netCDF file', epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter, prog=PROGNAME)
 
     parser.add_argument('filename', help='filename')
 
@@ -54,6 +57,8 @@ python3 -m apres.plot_apres -t -g 3 2 filename.dat
     parser.add_argument('-g', '--grid', help='plot the first nrows x ncols traces', dest='grid', nargs=2, default=[1, 1], type=int)
     parser.add_argument('-c', '--contrast', help='contrast for the radargram', dest='contrast', default=1.0, type=float)
     parser.add_argument('-m', '--cmap', help='colour map for the radargram', dest='cmap', default='gray')
+    m._add_fsspec_opts(parser)
+    m._add_common_opts(parser)
 
     args = parser.parse_args()
 
@@ -214,7 +219,7 @@ def main():
     suffix = os.path.splitext(args.filename)[1]
 
     if suffix.lower() == ApRESFile.DEFAULTS['apres_suffix']:
-        with ApRESFile(args.filename) as f:
+        with ApRESFile(args.filename, fs_opts=args.fs_opts) as f:
             for burst in f.read():
                 plot_burst(args, burst)
     elif suffix.lower() == ApRESFile.DEFAULTS['netcdf_suffix']:

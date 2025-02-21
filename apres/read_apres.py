@@ -1,13 +1,18 @@
 import argparse
 
 from apres import ApRESFile
+import apres.__main__ as m
+
+PROGNAME = 'read_apres'
 
 def main():
-    parser = argparse.ArgumentParser(description='print the header, a sample of the data, and diagnostics, from the given raw ApRES file')
+    parser = argparse.ArgumentParser(description='print the header, a sample of the data, and diagnostics, from the given raw ApRES file', prog=PROGNAME)
     parser.add_argument('infile', help='ApRES raw file')
+    m._add_fsspec_opts(parser)
+    m._add_common_opts(parser)
     args = parser.parse_args()
 
-    with ApRESFile(args.infile) as f:
+    with ApRESFile(args.infile, fs_opts=args.fs_opts) as f:
         for burst in f.read():
             header = burst.header
             print(f'header: header_start = {burst.header_start}')

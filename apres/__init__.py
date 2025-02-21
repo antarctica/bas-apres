@@ -331,7 +331,8 @@ class ApRESBurst(object):
 
         count = int(np.prod(self.data_shape))
         self.fp.seek(self.data_start, 0)
-        self.data = np.fromfile(self.fp, dtype=np.dtype(self.data_type), count=count)
+        buf = self.fp.read(count * np.dtype(self.data_type).itemsize)
+        self.data = np.frombuffer(buf, dtype=np.dtype(self.data_type), count=count)
         self.reshape_data()
 
         return self.data
@@ -436,7 +437,7 @@ class ApRESFile(object):
         }
     }
 
-    def __init__(self, path=None, mode='rb'):
+    def __init__(self, path=None, mode='rb', fs_opts={}):
         """
         Constructor
 
@@ -444,10 +445,13 @@ class ApRESFile(object):
         :type path: str
         :param mode: Mode in which to open the file
         :type mode: str
+        :param fs_opts: Any kwargs required for opening a url using fsspec
+        :type fs_opts: dict
         """
 
         self.path = path
         self.mode = mode
+        self.fs_opts = fs_opts
         self.fp = None
         self.file_size = -1
         self.bursts = []
@@ -478,18 +482,22 @@ class ApRESFile(object):
 
         return False         # This ensures any exception is re-raised
 
-    def open(self, path=None, mode=None):
+    def open(self, path=None, mode=None, fs_opts=None):
         """
         Open the given file
 
         * If open mode is not binary, then we force it to be so
         * We store the default encoding in self.fp so that the header can be
           correctly decoded
+        * If path is an fsspec URL (e.g. s3://, gs:// etc.) then provide any
+          necessary options to open the file (e.g. credentials) in fs_opts
 
         :param path: Path to the file
         :type path: str
         :param mode: Mode in which to open the file
         :type mode: str
+        :param fs_opts: Any kwargs required for opening a url using fsspec
+        :type fs_opts: dict
         :returns: This object
         :rtype: ApRESFile
         """
@@ -500,11 +508,31 @@ class ApRESFile(object):
         if mode:
             self.mode = mode
 
+        if fs_opts:
+            self.fs_opts = fs_opts
+
         if 'b' not in self.mode:
             self.mode += 'b'
 
-        self.fp = open(self.path, self.mode)
-        self.file_size = os.fstat(self.fp.fileno()).st_size
+        # We use fsspec to load remote resources, otherwise we just open as
+        # a file on the local filesystem
+        if '://' in self.path:
+            try:
+                import fsspec
+            except ImportError:
+                raise ImportError("To open files on remote storage the 'remote' optional dependency must be installed: pip install bas-apres[remote]")
+
+            protocol = self.path.split('://')[0]
+            fs = fsspec.filesystem(protocol, **self.fs_opts)
+            self.fp = fs.open(self.path, mode=self.mode)
+            self.file_size = fs.info(self.path)['size']
+            self.fp.protocol = protocol
+            self.fp.remote = True
+        else:
+            self.fp = open(self.path, self.mode)
+            self.file_size = os.fstat(self.fp.fileno()).st_size
+            self.fp.remote = False
+
         self.fp.encoding = self.DEFAULTS['file_encoding']
 
         return self

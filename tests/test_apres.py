@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import Mock, patch
+import pytest
 import os
 import warnings
 import tempfile
@@ -650,6 +651,9 @@ class TestApRESFile(unittest.TestCase):
 
     base = os.path.dirname(__file__)
 
+    # Common fsspec options for unauthenticated access to remote files
+    fs_opts = {'anon': True}
+
     def test_override_path_in_open(self):
         non_existent_file = self.base + '/non-existent-file'
         existent_file = self.base + '/short-test-data.dat'
@@ -782,6 +786,19 @@ class TestApRESFile(unittest.TestCase):
 
             assert in_nbursts == 5
             assert out_nbursts == 3
+
+    @pytest.mark.remote
+    def test_remote_load_s3(self):
+        remote_dat = 's3://apres-tests/short-test-data.dat'
+        local_dat = self.base + '/short-test-data.dat'
+
+        with ApRESFile(remote_dat, fs_opts=self.fs_opts) as f_remote:
+            f_remote.read()
+
+        with ApRESFile(local_dat) as f_local:
+            f_local.read()
+
+        assert all((f_local.bursts[n].data == f_remote.bursts[n].data).all() for n in range(len(f_local.bursts)))
 
 class TestConversion(unittest.TestCase):
 

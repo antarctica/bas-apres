@@ -49,7 +49,7 @@ The package contains a number of scripts for converting from/to netCDF, plotting
 
 ### Input files held on remote cloud storage
 
-The utility scripts have the ability to load data from remote cloud storage.  To do so, the input filename must be specified as a valid URI for the particular cloud storage platform.  In addtion, any `fsspec` options required for accessing the remote resource should be specified as a JSON string (via the `-o` option) or as a JSON file (via the `-O` option).  The latter is a better choice if the `fsspec` options include sensitive credentials.  For example, to anonymously access pubicly open data from an S3 bucket:
+The utility scripts have the ability to load data from remote cloud storage.  To do so, the input filename must be specified as a valid URI for the particular cloud storage platform.  In addtion, any `fsspec` options required for accessing the remote resource should be specified as a JSON string (via the `-o` option) or as a JSON file (via the `-O` option).  The latter is a better choice if the `fsspec` options include sensitive credentials.  For example, to anonymously access publicly open data from an S3 bucket:
 
 ```bash
 $ python -m apres.read_apres -o '{"anon": true}' s3://apres-tests/short-test-data.dat

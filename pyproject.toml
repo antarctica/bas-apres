@@ -2,7 +2,7 @@
 name = "bas-apres"
 version = "0.2.0"
 description = "Package for working with BAS ApRES files"
-authors = ["Paul Breen <pbree@bas.ac.uk>"]
+authors = ["Paul Breen <pbree@bas.ac.uk>", "Jonathan Kingslake <j.kingslake@columbia.edu>"]
 license = "Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/antarctica/bas-apres"

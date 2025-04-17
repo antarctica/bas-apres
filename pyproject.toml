@@ -7,7 +7,7 @@ license = "Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/antarctica/bas-apres"
 homepage = "https://github.com/antarctica/bas-apres"
-documentation = "https://raw.githubusercontent.com/antarctica/bas-apres/master/README.md"
+documentation = "https://antarctica.github.io/bas-apres/"
 
 # This is required because the apres name is taken on PyPI, hence "name"
 # above is different to the directory/module name

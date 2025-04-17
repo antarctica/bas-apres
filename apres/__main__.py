@@ -1,3 +1,10 @@
+"""
+Package for working with BAS ApRES files
+
+This is the package main, however, there is no package main functionality.
+See the individual CLI scripts (e.g. read_apres, plot_apres etc. instead.)
+"""
+
 import os
 import json
 import logging
@@ -22,5 +29,5 @@ def _add_common_opts(parser):
     parser.add_argument('-V', '--version', action='version', version=f"%(prog)s {__version__}")
 
 if __name__ == '__main__':
-    print('There is no package main functionality.  See the individual CLI scripts (e.g. read_apres, plot_apres etc. instead.')
+    print('There is no package main functionality.  See the individual CLI scripts (e.g. read_apres, plot_apres etc. instead.)')
 

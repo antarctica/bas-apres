@@ -5,6 +5,12 @@
 # Date:    2018-09-24
 ###############################################################################
 
+"""
+Package for working with BAS ApRES files
+
+The package contains classes for working with ApRES .dat files.  It enables the files to be read, rewritten, and converted.
+"""
+
 __version__ = '0.3.0'
 
 import re

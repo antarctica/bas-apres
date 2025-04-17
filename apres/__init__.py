@@ -11,7 +11,7 @@ Package for working with BAS ApRES files
 The package contains classes for working with ApRES .dat files.  It enables the files to be read, rewritten, and converted.
 """
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 
 import re
 import os

@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.4.1] - 2025-04-17
+
+### Fixed
+
+- Fix a bug whereby the dimension lengths are in the correct order but the corresponding dimension keys are not
+
 ## [v0.4.0] - 2025-04-17
 
 ### Added

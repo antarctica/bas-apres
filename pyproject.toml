@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bas-apres"
-version = "0.4.1"
+version = "0.4.2"
 description = "Package for working with BAS ApRES files"
 authors = ["Paul Breen <pbree@bas.ac.uk>", "Jonathan Kingslake <j.kingslake@columbia.edu>"]
 license = "Apache-2.0"

@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.4.2] - 2025-04-18
+
+### Added
+
+- Add support for rewriting (subsetting) and plotting multi-attenuator data
+
 ## [v0.4.1] - 2025-04-17
 
 ### Fixed

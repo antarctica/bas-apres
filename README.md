@@ -70,7 +70,7 @@ This script converts an ApRES .dat file to netCDF4.  The default output netCDF f
 The conversion is a straightforward mapping, in that each burst becomes a netCDF4 group, where the header lines become group attributes, and the data are stored as the group data.  How the data are stored depends on the number of attenuators used when acquiring the data:
 
 * Single-attenuator configuration: The data are stored as a `NSubBursts` x `N_ADC_SAMPLES` 2D data array.
-* Multi-attenuator configuration: The data are stored as a `NSubBursts` x `N_ADC_SAMPLES` x `nAttenuators` 3D data array.
+* Multi-attenuator configuration: The data are stored as a `NSubBursts` x `nAttenuators` x `N_ADC_SAMPLES` 3D data array.
 
 ### nc_to_apres.py
 

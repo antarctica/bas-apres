@@ -22,18 +22,26 @@ def main():
             print(f'header: dict = ')
             print(header)
 
-
             data = burst.data
+            ndims = len(data.shape)
             print(f'data: len(data) = {len(data)}')
             print(f'data: data.size = {data.size}')
             print(f'data: data.shape = {data.shape}')
 
-            # Show a small selection of the first subbursts and samples
+            # Show a small selection of the first subbursts and samples.
+            # If this is a multi-attenuator dataset, show data for each one
             if len(data) > 0:
                 nsubbursts = 10 if data.shape[0] > 10 else data.shape[0]
-                nsamples = 10 if data.shape[1] > 10 else data.shape[1]
+
+                if ndims > 2:
+                    nsamples = 10 if data.shape[2] > 10 else data.shape[2]
+                    data_slice = data[0:nsubbursts, :, 0:nsamples]
+                else:
+                    nsamples = 10 if data.shape[1] > 10 else data.shape[1]
+                    data_slice = data[0:nsubbursts, 0:nsamples]
+
                 print('data: head = ')
-                print(data[0:nsubbursts, 0:nsamples])
+                print(data_slice)
 
         print(f'number of bursts = {len(f.bursts)}')
 

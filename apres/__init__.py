@@ -418,12 +418,23 @@ class ApRESBurst(object):
         if self.data_start == -1:
             self.read_data()
 
-        if not subbursts:
-            subbursts = range(self.data_shape[0])
-        if not samples:
-            samples = range(self.data_shape[1])
+        ndims = len(self.data.shape)
 
-        fp.write(np.asarray(self.data[subbursts.start:subbursts.stop:subbursts.step, samples.start:samples.stop:samples.step], order=self.DEFAULTS['data_dim_order']))
+        if not subbursts:
+            subbursts = range(self.data.shape[0])
+
+        if ndims > 2:
+            if not samples:
+                samples = range(self.data.shape[2])
+
+            data_slice = self.data[subbursts.start:subbursts.stop:subbursts.step, :, samples.start:samples.stop:samples.step]
+        else:
+            if not samples:
+                samples = range(self.data.shape[1])
+
+            data_slice = self.data[subbursts.start:subbursts.stop:subbursts.step, samples.start:samples.stop:samples.step]
+
+        fp.write(np.asarray(data_slice, order=self.DEFAULTS['data_dim_order']))
 
 class ApRESFile(object):
     """

@@ -137,13 +137,21 @@ def plot_data(args, data, title, labels=[]):
     :type labels: list
     """
 
+    ndims = len(data.shape)
+
     if args.type == 'traces':     # Plot individual traces
         (nrows, ncols) = args.grid
         fig = plt.figure()
 
         for i in range(nrows * ncols):
             ax = fig.add_subplot(nrows, ncols, i + 1)
-            ax.plot(data[i])
+
+            # If this is a multi-attenuator dataset, plot data for each one
+            if ndims > 2:
+                for j in range(data.shape[1]):
+                    ax.plot(data[i, j])
+            else:
+                ax.plot(data[i])
 
             # Data contains multiple curves so label accordingly
             if labels:
@@ -152,16 +160,15 @@ def plot_data(args, data, title, labels=[]):
         fig.supxlabel('Samples')
         fig.supylabel('Amplitude')
     else:                         # Plot the vertical traces as a radargram
-        ndims = len(data.shape)
         ntraces = int(data.shape[0])
-        npoints = int(data.shape[1])
+        npoints = int(data.shape[1]) if ndims < 3 else int(data.shape[2])
         xaxis = np.linspace(1.0, float(ntraces), int(ntraces))
         yaxis = np.linspace(0.0, float(npoints), int(npoints))
         fig = plt.figure()
 
         if ndims > 2:
-            for i in range(data.shape[2]):
-                ax = fig.add_subplot(data.shape[2], 1, i + 1)
+            for i in range(data.shape[1]):
+                ax = fig.add_subplot(data.shape[1], 1, i + 1)
 
                 # Just use one set of x-axis tic labels for all stacked plots
                 if i == 0:
@@ -169,10 +176,10 @@ def plot_data(args, data, title, labels=[]):
                 else:
                     ax.sharex(ax0)
 
-                if i != data.shape[2] - 1:
+                if i != data.shape[1] - 1:
                     ax.tick_params(labelbottom=False)
 
-                data_slice = data[:,:,i]
+                data_slice = data[:, i, :]
                 mat = construct_radargram_data(data_slice, ntraces, npoints)
                 plot_radargram(mat, xaxis, yaxis, contrast=args.contrast, cmap=args.cmap)
 
@@ -209,7 +216,7 @@ def plot_burst(args, burst):
     ndims = len(burst.data_shape)
 
     if ndims > 2:
-        labels = [f"{burst.data_dim_keys[2]} {i}" for i in range(ndims)]
+        labels = [f"{burst.data_dim_keys[1]} {i}" for i in range(ndims)]
 
     title = f'{os.path.basename(args.filename)}: {burst.header["Time stamp"]}'
     plot_data(args, burst.data, title, labels=labels)
